@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 12 - InsureEasy</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f1f5f9;color:#222}
+header{background:#1d4ed8;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#1d4ed8;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1000px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#1d4ed8;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}
+button.d{background:#dc2626}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;font-size:14px}
+.msg{color:#b91c1c}.ok{color:green}.tag{padding:2px 8px;border-radius:10px;font-size:12px;background:#e2e8f0}
+.sms{background:#ecfccb;border-left:4px solid #65a30d;padding:8px;margin:6px 0;border-radius:4px}
+</style></head><body>
+<header><h2>🛡 InsureEasy</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+let agents=L('ie_agents',[]),custs=L('ie_custs',[]),pols=L('ie_pols',[]),sms=L('ie_sms',[]);
+let sess=L('ie_sess',null),page='home'; // sess={role,id,name}
+const save=()=>{S('ie_agents',agents);S('ie_custs',custs);S('ie_pols',pols);S('ie_sms',sms)};
+function go(p){page=p;render()}
+function logout(){sess=null;localStorage.removeItem('ie_sess');go('home')}
+function render(){
+ let n='<button onclick="go(\'home\')">Home</button>';
+ if(!sess)n+='<button onclick="go(\'alogin\')">Admin Login</button><button onclick="go(\'agreg\')">Agent Register</button><button onclick="go(\'aglogin\')">Agent Login</button><button onclick="go(\'ulogin\')">Customer Login</button>';
+ else if(sess.role==='admin')n+='<button onclick="go(\'approve\')">Approve Agents</button><button onclick="go(\'viewag\')">View All Agents</button>';
+ else if(sess.role==='agent')n+='<button onclick="go(\'newcust\')">Create Customer</button><button onclick="go(\'mycust\')">Manage Customers</button><button onclick="go(\'policy\')">Manage Policies</button><button onclick="go(\'alerts\')">Send SMS Alert</button>';
+ else n+='<button onclick="go(\'upol\')">My Policies</button><button onclick="go(\'inbox\')">SMS Alerts</button>';
+ if(sess)n+=`<button onclick="logout()">Logout (${sess.name})</button>`;
+ $('nav').innerHTML=n;$('app').innerHTML=pages[page]();
+}
+const loginForm=(t,fn)=>`<div class="card"><h3>${t}</h3><input id="lu" placeholder="Username / Mobile"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="${fn}()">Login</button><div id="lm" class="msg"></div></div>`;
+const pages={
+home:()=>`<div class="card"><h2>Welcome to InsureEasy</h2><p>Agents register and get approved by the admin. Agents create customers, manage policies and send SMS reminders before premium due dates. Customers log in to view policies and read their SMS alerts.</p><p><small>Demo admin: <b>admin / admin123</b></small></p></div>`,
+alogin:()=>loginForm('Admin Login','adminLogin'),aglogin:()=>loginForm('Agent Login','agentLogin'),ulogin:()=>loginForm('Customer Login (mobile number)','custLogin'),
+agreg:()=>`<div class="card"><h3>Agent Registration</h3><input id="n" placeholder="Name"><input id="u" placeholder="Username"><input id="ph" placeholder="Phone"><input id="p" type="password" placeholder="Password"><button class="p" onclick="regAgent()">Register</button><div id="lm" class="msg"></div></div>`,
+approve:()=>`<div class="card"><h3>Agent approvals</h3><table><tr><th>Name</th><th>Username</th><th>Phone</th><th>Status</th><th></th></tr>${agents.map((a,i)=>`<tr><td>${a.name}</td><td>${a.user}</td><td>${a.phone}</td><td><span class="tag">${a.approved?'Approved':'Pending'}</span></td><td>${a.approved?`<button class="p d" onclick="setAg(${i},false)">Revoke</button>`:`<button class="p" onclick="setAg(${i},true)">Approve</button>`}</td></tr>`).join('')||'<tr><td colspan=5>No agents registered</td></tr>'}</table></div>`,
+viewag:()=>`<div class="card"><h3>All agent details</h3><table><tr><th>Name</th><th>Phone</th><th>Customers</th><th>Policies</th><th>Premium total</th></tr>${agents.map(a=>{const cs=custs.filter(c=>c.agent===a.user),ps=pols.filter(p=>p.agent===a.user);return`<tr><td>${a.name}</td><td>${a.phone}</td><td>${cs.length}</td><td>${ps.length}</td><td>₹${ps.reduce((s,p)=>s+p.premium,0)}</td></tr>`}).join('')}</table></div>`,
+newcust:()=>`<div class="card"><h3>Create Customer</h3><input id="n" placeholder="Name"><input id="ph" placeholder="Mobile (login id)"><input id="em" placeholder="Email"><input id="p" type="password" placeholder="Password"><button class="p" onclick="addCust()">Create</button><div id="lm" class="msg"></div></div>`,
+mycust:()=>`<div class="card"><h3>My customers</h3><table><tr><th>Name</th><th>Mobile</th><th>Email</th><th></th></tr>${custs.filter(c=>c.agent===sess.id).map(c=>`<tr><td>${c.name}</td><td>${c.phone}</td><td>${c.email}</td><td><button class="p" onclick="editCust('${c.phone}')">Edit</button><button class="p d" onclick="delCust('${c.phone}')">Delete</button></td></tr>`).join('')||'<tr><td colspan=4>None</td></tr>'}</table></div>`,
+policy:()=>{const mine=custs.filter(c=>c.agent===sess.id);return`<div class="card"><h3>Add policy</h3><select id="pc">${mine.map(c=>`<option value="${c.phone}">${c.name} (${c.phone})</option>`).join('')}</select><select id="pt"><option>Health</option><option>Auto</option><option>Home</option><option>Life</option></select><input id="pn" placeholder="Policy no."><input id="pp" type="number" placeholder="Premium ₹"><input id="pd" type="date"><button class="p" onclick="addPol()">Add</button><div id="lm" class="msg"></div></div>
+<div class="card"><h3>Policies</h3>${polTable(pols.filter(p=>p.agent===sess.id),true)}</div>`},
+alerts:()=>`<div class="card"><h3>Send SMS alert to policyholder</h3><p>Alerts are simulated and stored in the customer's inbox.</p><table><tr><th>Customer</th><th>Policy</th><th>Due</th><th>Status</th><th></th></tr>${pols.filter(p=>p.agent===sess.id).map((p,i)=>{const d=daysTo(p.due);return`<tr><td>${cn(p.cust)}</td><td>${p.no} (${p.type})</td><td>${p.due}</td><td>${d<0?'<span class=msg>Overdue '+(-d)+'d</span>':d+' days left'}</td><td><button class="p" onclick="sendSms('${p.no}')">Send SMS</button></td></tr>`}).join('')}</table></div>`,
+upol:()=>`<div class="card"><h3>My policies</h3>${polTable(pols.filter(p=>p.cust===sess.id),false)}</div>`,
+inbox:()=>`<div class="card"><h3>SMS alerts</h3>${sms.filter(s=>s.to===sess.id).reverse().map(s=>`<div class="sms"><small>${s.time}</small><br>${s.text}</div>`).join('')||'No alerts yet.'}</div>`
+};
+const cn=ph=>(custs.find(c=>c.phone===ph)||{name:ph}).name;
+const daysTo=d=>Math.ceil((new Date(d)-new Date(new Date().toDateString()))/864e5);
+function polTable(list,edit){return`<table><tr><th>Policy No</th><th>Customer</th><th>Type</th><th>Premium</th><th>Due</th><th>Status</th><th></th></tr>${list.map(p=>`<tr><td>${p.no}</td><td>${cn(p.cust)}</td><td>${p.type}</td><td>₹${p.premium}</td><td>${p.due}</td><td><span class="tag">${p.paid?'Paid':'Due'}</span></td><td>${edit?`<button class="p" onclick="togglePaid('${p.no}')">Mark paid/due</button><button class="p d" onclick="delPol('${p.no}')">Delete</button>`:(p.paid?'':`<button class="p" onclick="payPol('${p.no}')">Pay premium</button>`)}</td></tr>`).join('')||'<tr><td colspan=7>No policies</td></tr>'}</table>`}
+function setSess(s){sess=s;S('ie_sess',s)}
+function adminLogin(){if(V('lu')==='admin'&&$('lp').value==='admin123'){setSess({role:'admin',id:'admin',name:'Admin'});go('approve')}else $('lm').textContent='Invalid admin credentials'}
+function regAgent(){if(!V('n')||!V('u')||!V('p')){$('lm').textContent='All fields required';return}if(agents.find(a=>a.user===V('u'))){$('lm').textContent='Username taken';return}
+ agents.push({name:V('n'),user:V('u'),phone:V('ph'),pass:$('p').value,approved:false});save();alert('Registered. Wait for admin approval.');go('aglogin')}
+function agentLogin(){const a=agents.find(x=>x.user===V('lu')&&x.pass===$('lp').value);if(!a){$('lm').textContent='Invalid credentials';return}if(!a.approved){$('lm').textContent='Your login is not yet approved by admin';return}setSess({role:'agent',id:a.user,name:a.name});go('mycust')}
+function custLogin(){const c=custs.find(x=>x.phone===V('lu')&&x.pass===$('lp').value);if(!c){$('lm').textContent='Invalid credentials';return}setSess({role:'user',id:c.phone,name:c.name});go('upol')}
+function setAg(i,v){agents[i].approved=v;save();render()}
+function addCust(){if(!V('n')||!V('ph')||!V('p')){$('lm').textContent='Name, mobile and password required';return}if(custs.find(c=>c.phone===V('ph'))){$('lm').textContent='Mobile already used';return}
+ custs.push({name:V('n'),phone:V('ph'),email:V('em'),pass:$('p').value,agent:sess.id});save();go('mycust')}
+function editCust(ph){const c=custs.find(x=>x.phone===ph);const n=prompt('Name',c.name);if(n===null)return;const e=prompt('Email',c.email);c.name=n||c.name;c.email=e??c.email;save();render()}
+function delCust(ph){if(confirm('Delete customer and their policies?')){custs=custs.filter(c=>c.phone!==ph);pols=pols.filter(p=>p.cust!==ph);save();render()}}
+function addPol(){if(!V('pc')||!V('pn')||!V('pp')||!V('pd')){$('lm').textContent='Fill all policy fields (create a customer first)';return}
+ pols.push({no:V('pn'),cust:V('pc'),type:V('pt'),premium:+V('pp'),due:V('pd'),paid:false,agent:sess.id});save();render()}
+function togglePaid(no){const p=pols.find(x=>x.no===no);p.paid=!p.paid;save();render()}
+function delPol(no){pols=pols.filter(p=>p.no!==no);save();render()}
+function payPol(no){pols.find(x=>x.no===no).paid=true;save();render()}
+function sendSms(no){const p=pols.find(x=>x.no===no),d=daysTo(p.due);
+ const t=d<0?`Dear ${cn(p.cust)}, your ${p.type} policy ${p.no} premium of ₹${p.premium} was due on ${p.due} and is overdue. Please pay immediately.`:`Dear ${cn(p.cust)}, your ${p.type} policy ${p.no} premium of ₹${p.premium} is due on ${p.due} (${d} days left).`;
+ sms.push({to:p.cust,text:t,time:new Date().toLocaleString()});save();alert('SMS sent to '+p.cust+':\n\n'+t)}
+render();
+</script></body></html>

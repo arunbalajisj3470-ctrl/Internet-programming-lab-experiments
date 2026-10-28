@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 11 - Home Finder</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f3f5f9;color:#222}
+header{background:#0f766e;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#0f766e;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1000px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#0f766e;color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;margin:4px 4px 4px 0}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.ads{display:flex;gap:10px;flex-wrap:wrap;max-width:1000px;margin:10px auto;padding:0 12px}
+.ads a{flex:1;min-width:200px;background:#fde68a;padding:10px;border-radius:8px;text-decoration:none;color:#78350f;text-align:center;font-size:14px}
+iframe{width:100%;height:300px;border:0;border-radius:8px}
+.price{color:#0f766e;font-weight:bold;font-size:18px}.msg{color:#b91c1c}
+</style></head><body>
+<header><h2>🏠 Home Finder</h2><nav id="nav"></nav></header>
+<div class="ads">
+ <a href="https://www.bankbazaar.com/home-loan.html" target="_blank">💰 Compare Home Loans</a>
+ <a href="https://www.ikea.com/in/en/" target="_blank">🛋 Furnish your new home</a>
+ <a href="https://www.google.com/maps" target="_blank">📍 Explore neighbourhoods</a>
+</div>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+const props=[
+{id:1,title:'2BHK Apartment',type:'Apartment',city:'Chennai',price:4500000,beds:2,agent:'Ravi Kumar',company:'Skyline Realty',lat:13.0827,lng:80.2707,amen:'Parking, Lift'},
+{id:2,title:'Independent Villa',type:'Villa',city:'Coimbatore',price:9500000,beds:4,agent:'Anita Rao',company:'GreenNest',lat:11.0168,lng:76.9558,amen:'Garden, Pool'},
+{id:3,title:'Residential Plot 1200 sqft',type:'Land',city:'Madurai',price:2200000,beds:0,agent:'Suresh M',company:'Skyline Realty',lat:9.9252,lng:78.1198,amen:'Gated layout'},
+{id:4,title:'3BHK Flat',type:'Apartment',city:'Bengaluru',price:7800000,beds:3,agent:'Anita Rao',company:'GreenNest',lat:12.9716,lng:77.5946,amen:'Gym, Security'},
+{id:5,title:'Commercial Shop',type:'Commercial',city:'Chennai',price:6000000,beds:0,agent:'Ravi Kumar',company:'Skyline Realty',lat:13.0418,lng:80.2341,amen:'Main road frontage'},
+{id:6,title:'Cosy 1BHK House',type:'House',city:'Trichy',price:1500000,beds:1,agent:'Suresh M',company:'Urban Keys',lat:10.7905,lng:78.7047,amen:'Near bus stand'}];
+let users=L('hf_users',[]),user=L('hf_user',null),saved=L('hf_saved',{}),page='home';
+// maintain record of customers who visited the website
+const visits=L('hf_visits',[]);visits.push({time:new Date().toLocaleString(),who:user?user.name:'Guest'});S('hf_visits',visits);
+const inr=n=>'₹'+Number(n).toLocaleString('en-IN');
+function go(p){page=p;render()}
+function render(){
+ $('nav').innerHTML=`<button onclick="go('home')">Search</button><button onclick="go('agents')">Agents & Companies</button><button onclick="go('visits')">Visitors</button>`+
+ (user?`<button onclick="go('saved')">Saved Search</button><button onclick="logout()">Logout (${user.name})</button>`:`<button onclick="go('login')">Login</button><button onclick="go('reg')">Register</button>`);
+ $('app').innerHTML=pages[page]();
+ if(page==='home')search();if(page==='agents')agentSearch();
+}
+const pages={
+home:()=>`<div class="card"><h3>Find your property</h3>
+ <input id="q_city" placeholder="City / Area"><select id="q_type"><option value="">Any type</option><option>Apartment</option><option>Villa</option><option>House</option><option>Land</option><option>Commercial</option></select>
+ <input id="q_max" type="number" placeholder="Max budget (₹)"><input id="q_beds" type="number" placeholder="Min bedrooms">
+ <button class="p" onclick="search()">Search</button><button class="p" onclick="saveCrit()">💾 Save criteria</button><button class="p" onclick="useCrit()">Use saved criteria</button>
+ <div id="smsg" class="msg"></div></div><div id="res" class="grid"></div><div id="detail"></div>`,
+login:()=>`<div class="card"><h3>Buyer Login</h3><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="login()">Login</button><div id="lm" class="msg"></div></div>`,
+reg:()=>`<div class="card"><h3>Buyer Registration</h3><input id="ru" placeholder="Username"><input id="rn" placeholder="Full name"><input id="rp" type="password" placeholder="Password"><button class="p" onclick="register()">Register</button><div id="rm" class="msg"></div></div>`,
+saved:()=>`<div class="card"><h3>My saved search criteria</h3><pre>${JSON.stringify(saved[user.username]||'Nothing saved yet',null,2)}</pre><button class="p" onclick="go('home');setTimeout(useCrit,0)">Run this search</button></div>`,
+agents:()=>`<div class="card"><h3>Agent & Company search</h3><input id="aq" placeholder="Agent or company name" oninput="agentSearch()"><div id="ares"></div></div>`,
+visits:()=>`<div class="card"><h3>Website visitors (${visits.length})</h3><table><tr><th>#</th><th>Time</th><th>Visitor</th></tr>${visits.slice(-30).reverse().map((v,i)=>`<tr><td>${visits.length-i}</td><td>${v.time}</td><td>${v.who}</td></tr>`).join('')}</table></div>`
+};
+function register(){const u=V('ru'),n=V('rn'),p=$('rp').value;if(!u||!n||p.length<4){$('rm').textContent='Fill all fields (password min 4 chars)';return}
+ if(users.find(x=>x.username===u)){$('rm').textContent='Username already exists';return}
+ users.push({username:u,name:n,password:p});S('hf_users',users);alert('Registered! Please login.');go('login')}
+function login(){const u=users.find(x=>x.username===V('lu')&&x.password===$('lp').value);if(!u){$('lm').textContent='Invalid username or password';return}
+ user=u;S('hf_user',u);go('home')}
+function logout(){user=null;localStorage.removeItem('hf_user');go('home')}
+function crit(){return{city:V('q_city'),type:V('q_type'),max:V('q_max'),beds:V('q_beds')}}
+function search(){const c=crit();const r=props.filter(p=>(!c.city||p.city.toLowerCase().includes(c.city.toLowerCase()))&&(!c.type||p.type===c.type)&&(!c.max||p.price<=+c.max)&&(!c.beds||p.beds>=+c.beds));
+ $('res').innerHTML=r.map(p=>`<div class="card"><b>${p.title}</b><br>${p.type} • ${p.city}${p.beds?' • '+p.beds+' BHK':''}<div class="price">${inr(p.price)}</div><small>Agent: ${p.agent} (${p.company})</small><br><button class="p" onclick="details(${p.id})">View on map</button></div>`).join('')||'<p>No properties match your criteria.</p>'}
+function saveCrit(){if(!user){$('smsg').textContent='Please login to save search criteria.';return}saved[user.username]=crit();S('hf_saved',saved);$('smsg').style.color='green';$('smsg').textContent='Search criteria saved.'}
+function useCrit(){if(!user){$('smsg').textContent='Please login to use saved criteria.';return}const c=saved[user.username];if(!c){$('smsg').textContent='No saved criteria yet.';return}
+ $('q_city').value=c.city;$('q_type').value=c.type;$('q_max').value=c.max;$('q_beds').value=c.beds;search()}
+function details(id){const p=props.find(x=>x.id===id);const emi=m=>{const r=0.085/12,n=240;return Math.round(m*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))};
+ $('detail').innerHTML=`<div class="card"><h3>${p.title} — ${p.city}</h3><p>${p.amen} | Agent: ${p.agent}, ${p.company}</p>
+ <iframe src="https://maps.google.com/maps?q=${p.lat},${p.lng}&z=14&output=embed" loading="lazy"></iframe>
+ <p>Estimated EMI (80% loan, 8.5%, 20 yrs): <b>${inr(emi(p.price*0.8))}</b>/month</p></div>`;$('detail').scrollIntoView({behavior:'smooth'})}
+function agentSearch(){const q=($('aq')||{value:''}).value.toLowerCase();const r=props.filter(p=>p.agent.toLowerCase().includes(q)||p.company.toLowerCase().includes(q));
+ $('ares').innerHTML='<table><tr><th>Agent</th><th>Company</th><th>Property</th><th>City</th></tr>'+r.map(p=>`<tr><td>${p.agent}</td><td>${p.company}</td><td>${p.title}</td><td>${p.city}</td></tr>`).join('')+'</table>'}
+render();
+</script></body></html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>City Library Management System</title>
+<style>
+:root{--a:hsl(215 62% 38%);--a2:hsl(215 55% 94%);--bg:#f6f5f2;--fg:#1c1c20;--mu:#6a6a74;--bd:#e2e0da;--cd:#fff;--hf:Georgia,serif}
+@media(prefers-color-scheme:dark){:root{--a:hsl(215 65% 66%);--a2:hsl(215 25% 20%);--bg:#131318;--fg:#ececf0;--mu:#9a9aa6;--bd:#2b2b35;--cd:#1c1c24}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.55 system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--fg)}
+h1,h2,h3,.brand{font-family:var(--hf)}h2{margin:.2em 0 .6em}
+header{background:var(--cd);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+nav{max-width:1100px;margin:auto;display:flex;align-items:center;gap:4px;padding:10px 16px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:19px;margin-right:auto;color:var(--a);cursor:pointer}
+nav a{padding:6px 11px;border-radius:8px;color:var(--fg);text-decoration:none;cursor:pointer;font-size:14px}
+nav a:hover,nav a.on{background:var(--a2);color:var(--a)}
+main{max-width:1100px;margin:auto;padding:20px 16px 60px}
+footer{text-align:center;color:var(--mu);padding:20px;font-size:13px}
+.hero{background:var(--a);color:#fff;border-radius:14px;padding:34px 26px;margin-bottom:18px}
+.hero h1{margin:0 0 6px;font-size:30px}.hero p{margin:0;opacity:.9;max-width:60ch}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.bar input{flex:1;min-width:180px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--cd);color:var(--fg);font:inherit}
+.bar select{width:auto}input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--a);outline-offset:1px}
+label{display:block;margin:10px 0;font-size:13px;color:var(--mu)}label input,label select,label textarea{margin-top:4px;color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{position:relative;background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.card h3{margin:0;font-size:16px}.card p{margin:0}.ico{font-size:38px;background:var(--a2);border-radius:10px;text-align:center;padding:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}.mu{color:var(--mu);font-size:13px}
+.badge{display:inline-block;background:var(--a2);color:var(--a);border-radius:20px;padding:1px 10px;font-size:12px}
+.s-Cancelled{background:#fde8e8;color:#b42318}.s-Confirmed,.s-Delivered,.s-Returned,.s-Completed,.s-Booked{background:#e3f6ea;color:#18794e}
+.btn{background:var(--a);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer;margin-top:6px}
+.btn.sec{background:var(--a2);color:var(--a)}.btn.del{background:#fde8e8;color:#b42318}.btn.sm{padding:4px 10px;font-size:13px;margin:0}
+.heart{position:absolute;top:8px;right:8px;background:none;border:0;font-size:20px;cursor:pointer;color:var(--a)}
+.tw{overflow-x:auto;margin:12px 0}table{width:100%;border-collapse:collapse;background:var(--cd);border:1px solid var(--bd);border-radius:10px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:top}th{color:var(--mu);font-weight:600;font-size:13px}
+.form{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:16px;max-width:620px;margin-bottom:16px}.auth{margin:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}@media(max-width:560px){.two{grid-template-columns:1fr}}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--bd)}
+.tabs a{padding:8px 14px;cursor:pointer;border-bottom:3px solid transparent;color:var(--mu)}.tabs a.on{border-color:var(--a);color:var(--a);font-weight:600}
+.note{background:var(--a2);padding:8px 12px;border-radius:8px;font-size:13px}.lnk{color:var(--a);cursor:pointer;margin-left:8px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:20;padding:12px}
+.mb{background:var(--cd);border-radius:14px;padding:20px;max-width:520px;width:100%;max-height:92vh;overflow:auto;position:relative}
+.mb h2{margin-top:0;padding-right:30px}.x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:18px;cursor:pointer;color:var(--fg)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:10px;z-index:30;max-width:90vw}
+.seats{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}.seat{padding:6px 0;border:1px solid var(--bd);border-radius:6px;background:var(--cd);color:var(--fg);cursor:pointer}
+.seat.sel{background:var(--a);color:#fff}.seat.tk{background:var(--bd);color:var(--mu);cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:12px}.stat{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.stat b{display:block;font-size:24px;color:var(--a)}.stat span{color:var(--mu);font-size:13px}.qty{width:70px}hr{border:0;border-top:1px solid var(--bd);margin:14px 0}.rv{margin:4px 0}
+@media print{header,main,footer{display:none}.modal{position:static;background:none}.x,.mb .btn{display:none}}
+</style></head><body>
+<header><nav id="nav"></nav></header><main id="main"></main><footer>City Library Management System · Internet Programming Lab · Demo front-end (data saved in this browser only)</footer>
+<script>
+const C={"cur": "₹", "price": false, "per": "", "st": ["Issued", "Returned"], "contact": "Library desk: library@college.edu · Mon–Sat, 9 am to 5 pm", "ordersLabel": "My Borrow History", "file": "01-library-management", "id": "lib", "title": "City Library Management System", "short": "City Library", "icon": "📚", "hue": 215, "hf": "Georgia,serif", "tag": "Search the catalogue, borrow books, track due dates and fines.", "noun": "Books", "one": "Book", "verb": "Borrow", "stockLabel": "copies", "stk": "Copies", "extra": "Author", "cancel": false, "loan": 14, "fineRate": 5, "issue": true, "mat": true, "cats": ["Computer Science", "Mathematics", "Electronics", "Literature", "Management"], "items": [["Introduction to Algorithms", "Computer Science", 0, 4, "T. H. Cormen", "Reference for algorithms and data structures.", "📘"], ["Operating System Concepts", "Computer Science", 0, 3, "A. Silberschatz", "Processes, memory, file systems and security.", "💽"], ["Database System Concepts", "Computer Science", 0, 5, "Korth & Sudarshan", "Relational model, SQL and transactions.", "🗄️"], ["Higher Engineering Mathematics", "Mathematics", 0, 6, "B. S. Grewal", "Calculus, matrices and differential equations.", "➗"], ["Digital Electronics", "Electronics", 0, 2, "M. Morris Mano", "Logic gates, combinational and sequential circuits.", "🔌"], ["Wings of Fire", "Literature", 0, 3, "A. P. J. Abdul Kalam", "Autobiography of the Missile Man of India.", "🚀"], ["Principles of Management", "Management", 0, 4, "Koontz & Weihrich", "Planning, organising and leading teams.", "📊"], ["Web Technologies", "Computer Science", 0, 5, "Uttam K. Roy", "HTML, CSS, JavaScript, PHP and servlets.", "🌐"]], "mats": [["Data Structures Unit 1 Notes", 2, 3, "Arrays, stacks and queues."], ["DBMS Question Bank", 2, 4, "Previous year questions with answers."], ["Maths II Formula Sheet", 1, 2, "Integrals and series."]]};
+const mem={},K=k=>C.id+':'+k;
+function ld(k,d){try{const v=localStorage.getItem(K(k));return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
+function sv(k,v){mem[k]=v;try{localStorage.setItem(K(k),JSON.stringify(v))}catch(e){}}
+let users=ld('users',[{name:'Administrator',email:'admin@demo.com',pass:'admin123',role:'admin',phone:'',address:''},{name:'Demo Student',email:'user@demo.com',pass:'user123',role:'user',phone:'',address:''}]);
+let items=ld('items',null)||C.items.map((a,k)=>({id:k+1,n:a[0],c:a[1],p:a[2],s:a[3],e:a[4],d:a[5],i:a[6]}));
+let orders=ld('orders',[]),cart=ld('cart',[]),msgs=ld('msgs',[]),revs=ld('rev',{}),wish=ld('wish',{});
+let mats=ld('mats',(C.mats||[]).map(m=>({t:m[0],y:m[1],s:m[2],n:m[3]})));
+let me=(u=>users.find(x=>x.email==u)||null)(ld('me',null));
+let Q='',CAT='All',SORT='',AM='login',AT='items',EID=0,MQ='',MY='',MS='',cur={id:0,seats:[]},cp='home';
+const NS=C.seat||C.slot,REST=['Cancelled','Returned'];
+const saveAll=()=>{sv('users',users);sv('items',items);sv('orders',orders);sv('cart',cart);sv('msgs',msgs);sv('rev',revs);sv('wish',wish);sv('mats',mats);sv('me',me?me.email:null)};
+const el=id=>document.getElementById(id),gv=id=>{const e=el(id);return e?e.value:''};
+const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>C.cur+Number(n).toLocaleString('en-IN');
+const iso=d=>d.toISOString().slice(0,10),TD=()=>iso(new Date());
+const add=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return iso(d)};
+const diff=(a,b)=>Math.round((new Date(a)-new Date(b))/864e5);
+const go=p=>{if(location.hash=='#/'+p)render();else location.hash='#/'+p};
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)}
+function openM(html){closeM();const d=document.createElement('div');d.className='modal';d.id='m';d.onclick=e=>{if(e.target==d)closeM()};d.innerHTML=`<div class="mb"><button class="x" onclick="closeM()" aria-label="Close">✕</button>${html}</div>`;document.body.appendChild(d)}
+function closeM(){const d=el('m');if(d)d.remove()}
+
+function nav(){const adm=me&&me.role=='admin',usr=me&&!adm,L=[['home','Browse '+C.noun]];
+ if(C.mat)L.push(['mat','Materials']);if(C.pnr)L.push(['pnr',(C.pnrLabel||'PNR')+' Status']);
+ if(usr&&C.wish)L.push(['wish','Wishlist']);if(usr)L.push(['orders',C.ordersLabel]);
+ if(usr&&C.cart)L.push(['cart','Cart ('+cart.length+')']);if(usr)L.push(['profile','Profile']);
+ if(adm)L.push(['admin','Admin']);L.push(['contact','Contact']);
+ L.push(me?['out','Logout ('+h(me.name.split(' ')[0])+')']:['login','Login / Register']);
+ el('nav').innerHTML=`<span class="brand" onclick="go('home')">${C.icon} ${h(C.short)}</span>`+L.map(([k,t])=>`<a class="${cp==k?'on':''}" href="#/${k}">${t}</a>`).join('')}
+
+const pages={},adm={};
+function render(){let p=location.hash.slice(2)||'home';
+ if(['orders','profile','cart','wish'].includes(p)&&!me)p='login';
+ if(p=='admin'&&(!me||me.role!='admin'))p='login';if(!pages[p])p='home';
+ cp=p;nav();el('main').innerHTML=pages[p]();if(p=='home')drawGrid();if(p=='mat')drawMat();scrollTo(0,0)}
+window.addEventListener('hashchange',render);
+
+/* ---------- browse ---------- */
+pages.home=()=>`<div class="hero"><h1>${C.icon} ${h(C.title)}</h1><p>${h(C.tag)}</p></div>
+<div class="bar"><input id="q" placeholder="Search ${C.noun.toLowerCase()}…" aria-label="Search" oninput="Q=this.value;drawGrid()" value="${h(Q)}">
+<select aria-label="Category" onchange="CAT=this.value;drawGrid()"><option>All</option>${C.cats.map(c=>`<option ${c==CAT?'selected':''}>${h(c)}</option>`).join('')}</select>
+${C.price?`<select aria-label="Sort" onchange="SORT=this.value;drawGrid()"><option value="">Sort by</option><option value="a" ${SORT=='a'?'selected':''}>Price: low to high</option><option value="d" ${SORT=='d'?'selected':''}>Price: high to low</option></select>`:''}</div><div id="grid" class="grid"></div>`;
+const wl=()=>(me&&wish[me.email])||[];
+function card(i){return `<div class="card">${C.wish?`<button class="heart" aria-label="Wishlist" onclick="tw(${i.id})">${wl().includes(i.id)?'♥':'♡'}</button>`:''}<div class="ico">${i.i}</div><span class="badge" style="align-self:flex-start">${h(i.c)}</span><h3>${h(i.n)}</h3><p class="mu">${h(i.e)}</p><p>${h(i.d).slice(0,80)}${i.d.length>80?'…':''}</p><div class="row"><b>${C.price?money(i.p)+(C.per||''):''}</b><span class="mu">${C.slot?'':i.s>0?i.s+' '+C.stockLabel:'Unavailable'}</span></div><button class="btn" onclick="openItem(${i.id})">${C.verb}</button></div>`}
+function drawGrid(){const g=el('grid');if(!g)return;let l=items.filter(i=>(CAT=='All'||i.c==CAT)&&[i.n,i.c,i.e,i.d].join(' ').toLowerCase().includes(Q.toLowerCase()));
+ if(SORT=='a')l.sort((a,b)=>a.p-b.p);if(SORT=='d')l.sort((a,b)=>b.p-a.p);g.innerHTML=l.length?l.map(card).join(''):'<p class="mu">No results. Try a different search or category.</p>'}
+function tw(id){if(!me||me.role=='admin')return toast('Login as a customer to use the wishlist');const w=wish[me.email]=wl().slice();w.includes(id)?w.splice(w.indexOf(id),1):w.push(id);saveAll();cp=='wish'?render():drawGrid()}
+pages.wish=()=>`<h2>My Wishlist</h2><div class="grid">${items.filter(i=>wl().includes(i.id)).map(card).join('')||'<p class="mu">Nothing saved yet. Tap ♡ on any item.</p>'}</div>`;
+
+function openItem(id){const i=items.find(x=>x.id==id);cur={id,seats:[]};const rv=revs[id]||[];
+ const avg=rv.length?(rv.reduce((a,r)=>a+r.r,0)/rv.length).toFixed(1):'–';let f;
+ if(!me)f=`<p class="note">Please <a href="#/login" onclick="closeM()">login or register</a> to continue.</p>`;
+ else if(me.role=='admin')f=`<p class="note">Admins manage inventory from the Admin panel.</p>`;
+ else if(!NS&&i.s<1)f=`<p class="note">Currently unavailable.</p>`;
+ else f=`${C.date?`<label>${C.date}<input type="date" id="f-date" min="${TD()}" value="${add(TD(),Math.max(1,C.cancelDays||0))}" onchange="cur.seats=[];dd()"></label>`:''}
+${C.slot?`<label>Time slot<select id="f-time" onchange="upd()"></select></label>`:''}
+${C.seat?`<label>Select seat(s)</label><div id="seats" class="seats"></div><label>Passenger name(s)<input id="f-pax" placeholder="e.g. Ravi, Priya"></label>`:''}
+${C.qty&&!C.seat?`<label>${C.qty}<input type="number" id="f-qty" min="1" max="${Math.max(1,Math.min(i.s,10))}" value="1" oninput="upd()"></label>`:''}
+${C.note?`<label>${C.note}<input id="f-note"></label>`:''}
+${C.pay&&!C.cart?`<label>Payment method<select id="f-pay"><option>Card</option><option>UPI</option><option>Net banking</option><option>Pay at counter</option></select></label>`:''}
+${C.price?`<p>Total: <b id="tot"></b></p>`:''}
+<button class="btn" onclick="${C.cart?`addCart(${id})`:`book(${id})`}">${C.cart?'Add to cart':'Confirm: '+C.verb}</button>`;
+ openM(`<h2>${i.i} ${h(i.n)}</h2><p><span class="badge">${h(i.c)}</span> <span class="mu">${h(i.e)}</span></p><p>${h(i.d)}</p>${C.price?`<p><b>${money(i.p)}</b>${C.per||''}</p>`:''}${C.map?`<p><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.n+' '+i.e)}">📍 View on Google Maps</a></p>`:''}<hr>${f}${C.reviews?revBlock(i,rv,avg):''}`);dd()}
+const revBlock=(i,rv,avg)=>`<hr><h3>Reviews (average ${avg})</h3>${rv.map(r=>`<p class="rv"><b>${'★'.repeat(r.r)}</b> ${h(r.t)} <span class="mu">${h(r.u)}</span></p>`).join('')||'<p class="mu">No reviews yet. Be the first.</p>'}${me&&me.role!='admin'?`<div class="row"><select id="rv-r" style="width:70px">${[5,4,3,2,1].map(n=>`<option>${n}</option>`).join('')}</select><input id="rv-t" placeholder="Write a comment"><button class="btn sec" style="margin:0" onclick="addRev(${i.id})">Post</button></div>`:''}`;
+function addRev(id){const t=gv('rv-t').trim();if(!t)return toast('Write a comment first');(revs[id]=revs[id]||[]).push({r:+gv('rv-r'),t,u:me.name});saveAll();openItem(id)}
+function dd(){if(C.seat)drawSeats();if(C.slot)drawSlots();upd()}
+function upd(){if(!el('tot'))return;const i=items.find(x=>x.id==cur.id),q=C.seat?cur.seats.length:C.qty?(+gv('f-qty')||1):1;el('tot').textContent=money(i.p*q)}
+function drawSeats(){const s=el('seats');if(!s)return;const i=items.find(x=>x.id==cur.id),d=gv('f-date');
+ const tk=orders.filter(o=>o.itemId==i.id&&o.date==d&&o.status!='Cancelled').flatMap(o=>o.seats||[]);
+ s.innerHTML=Array.from({length:Math.min(i.s,40)},(_,k)=>k+1).map(n=>`<button type="button" class="seat ${tk.includes(n)?'tk':cur.seats.includes(n)?'sel':''}" ${tk.includes(n)?'disabled':''} onclick="pick(${n})">${n}</button>`).join('')}
+function pick(n){const a=cur.seats;a.includes(n)?a.splice(a.indexOf(n),1):a.push(n);drawSeats();upd()}
+function drawSlots(){const s=el('f-time');if(!s)return;const d=gv('f-date');const tk=orders.filter(o=>o.itemId==cur.id&&o.date==d&&o.status!='Cancelled').map(o=>o.time);
+ s.innerHTML=['10:00','11:00','12:00','14:00','15:00','16:00','17:00'].map(t=>`<option value="${t}" ${tk.includes(t)?'disabled':''}>${t}${tk.includes(t)?' (booked)':''}</option>`).join('')}
+
+/* ---------- orders ---------- */
+function mk(i,qty,o){const r={id:'O'+Date.now().toString().slice(-6)+Math.floor(Math.random()*90+10),user:o.user||me.email,itemId:i.id,name:i.n,qty,total:i.p*qty,status:C.st[0],date:o.date||TD(),time:o.time||'',seats:o.seats||[],pax:o.pax||'',pay:o.pay||'',addr:o.addr||'',created:TD()};
+ if(C.pnr)r.pnr=String(Math.floor(1e9+Math.random()*9e9));if(C.loan)r.due=add(r.date,C.loan);if(!NS)i.s-=qty;orders.push(r);return r}
+function book(id){const i=items.find(x=>x.id==id),o={};
+ if(C.date){o.date=gv('f-date');if(!o.date||o.date<TD())return toast('Choose a valid date')}
+ if(C.slot){o.time=gv('f-time');if(!o.time)return toast('Choose a free time slot')}
+ let q=1;
+ if(C.seat){o.seats=[...cur.seats];q=o.seats.length;o.pax=gv('f-pax').trim();if(!q)return toast('Select at least one seat');if(!o.pax)return toast('Enter passenger name(s)')}
+ else if(C.qty){q=+gv('f-qty');if(!(q>=1)||q>i.s)return toast('Only '+i.s+' available')}
+ else if(!NS&&i.s<1)return toast('Not available');
+ o.pay=gv('f-pay');const r=mk(i,q,o);saveAll();closeM();toast('Done! Confirmation email sent to '+me.email+' (ref '+(r.pnr||r.id)+')');go('orders')}
+function fine(o){if(!C.loan)return 0;if(o.status=='Returned')return o.fine||0;if(o.status!='Issued')return 0;return Math.max(0,diff(TD(),o.due))*C.fineRate}
+function canCancel(o){return C.cancel!==false&&(C.pnr?o.status!='Cancelled':o.status==C.st[0])&&diff(o.date,TD())>=(C.cancelDays||0)}
+function setStatus(id,s){const o=orders.find(x=>x.id==id);if(s=='Returned')o.fine=fine(o);const was=REST.includes(o.status);o.status=s;
+ if(!was&&REST.includes(s)&&!NS){const i=items.find(x=>x.id==o.itemId);if(i)i.s+=o.qty}saveAll()}
+const stSel=o=>`<select onchange="setSt('${o.id}',this.value)">${C.st.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select>`;
+function setSt(id,s){setStatus(id,s);toast('Status updated to '+s);render()}
+function cancelO(id){const o=orders.find(x=>x.id==id);if(!confirm('Cancel this '+C.one.toLowerCase()+' record?'))return;
+ if(C.refund){const d=diff(o.date,TD()),p=d>=3?90:d>=1?50:0;o.refund=o.total*p/100;toast('Cancelled. Refund '+money(o.refund)+' ('+p+'% as per refund rules)')}else toast('Cancelled');
+ setStatus(id,'Cancelled');render()}
+function chg(id){const o=orders.find(x=>x.id==id),d=prompt('New date (YYYY-MM-DD)',o.date);if(!d)return;
+ if(!/^\d{4}-\d\d-\d\d$/.test(d)||diff(d,TD())<(C.cancelDays||0))return toast('Pick a valid date at least '+(C.cancelDays||0)+' days from today');o.date=d;saveAll();toast('Date changed');render()}
+function printT(id){const o=orders.find(x=>x.id==id);openM(`<h2>🎫 E-Ticket</h2><p><b>${h(o.name)}</b></p><p>${o.pnr?'PNR: <b>'+o.pnr+'</b><br>':''}Ref: ${o.id}<br>Date: ${o.date}<br>Passengers: ${h(o.pax)}<br>Seats: ${o.seats.join(', ')}<br>Fare paid: ${money(o.total)} (${h(o.pay)})<br>Status: ${o.status}</p><button class="btn" onclick="print()">Print ticket</button>`)}
+function acts(o,adm){if(adm)return '';let b='';
+ if(canCancel(o)){b+=`<button class="btn sm del" onclick="cancelO('${o.id}')">Cancel</button> `;if(C.cancelDays>0)b+=`<button class="btn sm sec" onclick="chg('${o.id}')">Change date</button>`}
+ if(C.pnr&&o.status!='Cancelled')b+=` <button class="btn sm sec" onclick="printT('${o.id}')">Print</button>`;return b}
+function tbl(l,a){return `<div class="tw"><table><tr><th>Ref</th>${a?'<th>User</th>':''}<th>${C.pnr?'PNR / ':''}${C.one}</th><th>${C.loan?'Issue date':C.date?'Date':'Ordered'}</th>${C.loan?'<th>Exp. date</th><th>Fine</th>':''}<th>Details</th>${C.price?'<th>Total</th>':''}<th>Status</th><th></th></tr>`+
+ l.map(o=>`<tr><td>${o.id}</td>${a?`<td>${h(o.user)}</td>`:''}<td>${o.pnr?`<b>${o.pnr}</b><br>`:''}${h(o.name)}</td><td>${(C.date||C.loan)?o.date:o.created}${o.time?' '+o.time:''}</td>${C.loan?`<td>${o.due}</td><td>${fine(o)?money(fine(o)):'–'}</td>`:''}<td>${o.seats&&o.seats.length?'Seats '+o.seats.join(', ')+'<br>'+h(o.pax):(C.qty||C.cart)?'Qty '+o.qty+(o.pax?'<br>'+h(o.pax):''):''}${o.addr?'<br>📦 '+h(o.addr):''}</td>${C.price?`<td>${money(o.total)}${o.refund!=null?'<br><span class="mu">refund '+money(o.refund)+'</span>':''}</td>`:''}<td>${a?stSel(o):`<span class="badge s-${o.status.replace(/\W/g,'')}">${o.status}</span>`}</td><td>${acts(o,a)}</td></tr>`).join('')+'</table></div>'}
+pages.orders=()=>{const l=orders.filter(o=>o.user==me.email).reverse();
+ return `<h2>${C.ordersLabel}</h2>${C.loan?`<p class="note">Outstanding fine: <b>${money(l.reduce((a,o)=>a+fine(o),0))}</b> (${money(C.fineRate)} per day after the expiry date)</p>`:''}`+(l.length?tbl(l,false):`<p class="mu">Nothing here yet. <a href="#/home">Browse ${C.noun.toLowerCase()}</a></p>`)+`<p class="mu">Status flow: ${C.st.join(' → ')}</p>`};
+pages.pnr=()=>`<h2>Check ${C.pnrLabel||'PNR'} status</h2><div class="form"><label>${C.pnrLabel||'PNR'} number<input id="pq" placeholder="10-digit number"></label><button class="btn" onclick="chk()">Check status</button><div id="pr"></div></div>`;
+function chk(){const o=orders.find(x=>x.pnr==gv('pq').trim());el('pr').innerHTML=o?`<p><b>${h(o.name)}</b> on ${o.date}<br>Passengers: ${h(o.pax)} · Seats ${o.seats.join(', ')}<br>Status: <span class="badge s-${o.status.replace(/\W/g,'')}">${o.status}</span></p>`:'<p class="note">No booking found for that number.</p>'}
+
+/* ---------- cart ---------- */
+function addCart(id){const i=items.find(x=>x.id==id),q=Math.max(1,+gv('f-qty')||1);if(q>i.s)return toast('Only '+i.s+' left');
+ const e=cart.find(c=>c.id==id),note=gv('f-note');if(e){e.q=q;e.note=note}else cart.push({id,q,note});saveAll();closeM();nav();toast('Added to cart')}
+const cq=(id,v)=>{const c=cart.find(x=>x.id==id);c.q=Math.max(1,+v||1);saveAll();render()},rc=id=>{cart=cart.filter(c=>c.id!=id);saveAll();render()};
+pages.cart=()=>{const L=cart.map(c=>({c,i:items.find(x=>x.id==c.id)})).filter(x=>x.i),tot=L.reduce((a,x)=>a+x.i.p*x.c.q,0);
+ return `<h2>Shopping cart</h2>`+(L.length?`<div class="tw"><table><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>${L.map(x=>`<tr><td>${x.i.i} ${h(x.i.n)}${x.c.note?`<br><span class="mu">${h(x.c.note)}</span>`:''}</td><td>${money(x.i.p)}</td><td><input class="qty" type="number" min="1" max="${x.i.s}" value="${x.c.q}" onchange="cq(${x.i.id},this.value)"></td><td>${money(x.i.p*x.c.q)}</td><td><button class="btn sm del" onclick="rc(${x.i.id})">Remove</button></td></tr>`).join('')}</table></div><h3>Total: ${money(tot)}</h3><div class="form"><label>Shipping address<textarea id="ad">${h(me.address)}</textarea></label><label>Payment method<select id="f-pay"><option>Card</option><option>UPI</option><option>Net banking</option><option>Cash on delivery</option></select></label><button class="btn" onclick="checkout()">Place order</button></div>`:`<p class="mu">Your cart is empty. <a href="#/home">Browse ${C.noun.toLowerCase()}</a></p>`)};
+function checkout(){const ad=gv('ad').trim();if(!ad)return toast('Enter a shipping address');
+ for(const c of cart){const i=items.find(x=>x.id==c.id);if(!i||c.q>i.s)return toast('Not enough stock for '+(i?i.n:'an item'))}
+ cart.forEach(c=>mk(items.find(x=>x.id==c.id),c.q,{pax:c.note,pay:gv('f-pay'),addr:ad}));me.address=ad;cart=[];saveAll();toast('Order placed! Confirmation email sent to '+me.email);go('orders')}
+
+/* ---------- account ---------- */
+pages.login=()=>`<div class="form auth"><div class="tabs"><a class="${AM=='login'?'on':''}" onclick="AM='login';render()">Login</a><a class="${AM=='reg'?'on':''}" onclick="AM='reg';render()">Register</a></div>`+(AM=='login'?`<label>Email<input id="le" type="email"></label><label>Password<input id="lp" type="password"></label><button class="btn" onclick="doLogin()">Login</button><a class="lnk" onclick="forgot()">Forgot password?</a><p class="note">Demo accounts: admin@demo.com / admin123 · user@demo.com / user123</p>`:`<label>Full name<input id="rn"></label><label>Email<input id="re" type="email"></label><label>Phone<input id="rp"></label><label>Password (min 6 characters)<input id="rw" type="password"></label><button class="btn" onclick="doReg()">Create account</button>`)+'</div>';
+function doLogin(){const u=users.find(x=>x.email==gv('le').trim().toLowerCase()&&x.pass==gv('lp'));if(!u)return toast('Wrong email or password');me=u;saveAll();toast('Welcome, '+u.name);go(u.role=='admin'?'admin':'home')}
+function doReg(){const n=gv('rn').trim(),e=gv('re').trim().toLowerCase(),p=gv('rw');if(!n||!/^\S+@\S+\.\S+$/.test(e)||p.length<6)return toast('Enter a name, a valid email and a password of 6+ characters');
+ if(users.some(u=>u.email==e))return toast('That email is already registered');me={name:n,email:e,pass:p,role:'user',phone:gv('rp'),address:''};users.push(me);saveAll();toast('Account created');go('home')}
+function forgot(){const u=users.find(x=>x.email==(prompt('Registered email')||'').trim().toLowerCase());if(!u)return toast('Email not found');const p=prompt('New password (min 6 characters)');if(p&&p.length>=6){u.pass=p;saveAll();toast('Password updated. Please login.')}}
+pages.out=()=>{me=null;saveAll();location.hash='#/home';return ''};
+pages.profile=()=>`<h2>My profile</h2><div class="form"><label>Name<input id="pn" value="${h(me.name)}"></label><label>Email<input value="${h(me.email)}" disabled></label><label>Phone<input id="pp" value="${h(me.phone||'')}"></label>${C.cart?`<label>Shipping address<textarea id="pa">${h(me.address||'')}</textarea></label>`:''}<label>New password (leave blank to keep)<input id="pw" type="password"></label><button class="btn" onclick="saveP()">Save changes</button></div>`;
+function saveP(){const n=gv('pn').trim();if(!n)return toast('Name is required');const w=gv('pw');if(w&&w.length<6)return toast('Password needs 6+ characters');me.name=n;me.phone=gv('pp');if(C.cart)me.address=gv('pa');if(w)me.pass=w;saveAll();nav();toast('Profile saved')}
+pages.contact=()=>`<h2>Contact us</h2><div class="form"><p class="mu">${h(C.contact)}</p><label>Name<input id="cn" value="${h(me?me.name:'')}"></label><label>Email<input id="ce" type="email" value="${h(me?me.email:'')}"></label><label>Message<textarea id="cm" rows="4"></textarea></label><button class="btn" onclick="sendC()">Send message</button></div>`;
+function sendC(){const n=gv('cn').trim(),e=gv('ce').trim(),m=gv('cm').trim();if(!n||!e||!m)return toast('Fill in all fields');msgs.push({n,e,m,d:TD()});saveAll();toast('Message sent. We will reply soon.');render()}
+
+/* ---------- study material ---------- */
+pages.mat=()=>{const a=me&&me.role=='admin';return `<h2>Study material</h2><div class="bar"><input placeholder="Search material…" aria-label="Search material" oninput="MQ=this.value;drawMat()"><select aria-label="Year" onchange="MY=this.value;drawMat()"><option value="">All years</option>${[1,2,3,4].map(y=>`<option value="${y}">Year ${y}</option>`).join('')}</select><select aria-label="Semester" onchange="MS=this.value;drawMat()"><option value="">All semesters</option>${[1,2,3,4,5,6,7,8].map(s=>`<option value="${s}">Semester ${s}</option>`).join('')}</select></div>`+
+ (a?`<div class="form"><h3>Update material</h3><div class="two"><label>Title<input id="mt"></label><label>Notes<input id="mn"></label><label>Year<select id="my">${[1,2,3,4].map(y=>`<option>${y}</option>`).join('')}</select></label><label>Semester<select id="ms">${[1,2,3,4,5,6,7,8].map(s=>`<option>${s}</option>`).join('')}</select></label></div><button class="btn" onclick="addMat()">Add material</button></div>`:'')+'<div id="ml" class="grid"></div>'};
+function drawMat(){const g=el('ml');if(!g)return;const l=mats.map((m,k)=>({...m,k})).filter(m=>(!MY||m.y==MY)&&(!MS||m.s==MS)&&(m.t+m.n).toLowerCase().includes(MQ.toLowerCase()));
+ g.innerHTML=l.map(m=>`<div class="card"><div class="ico">📄</div><h3>${h(m.t)}</h3><span class="badge" style="align-self:flex-start">Year ${m.y} · Semester ${m.s}</span><p class="mu">${h(m.n)}</p><button class="btn" onclick="dl(${m.k})">Download</button>${me&&me.role=='admin'?`<button class="btn sm del" onclick="mats.splice(${m.k},1);saveAll();drawMat()">Delete</button>`:''}</div>`).join('')||'<p class="mu">No material found.</p>'}
+function dl(k){if(!me)return toast('Login to download material');const m=mats[k],b=new Blob([m.t+'\nYear '+m.y+', Semester '+m.s+'\n\n'+m.n],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=m.t.replace(/\W+/g,'_')+'.txt';a.click()}
+function addMat(){const t=gv('mt').trim();if(!t)return toast('Enter a title');mats.push({t,y:+gv('my'),s:+gv('ms'),n:gv('mn')});saveAll();toast('Material added');render()}
+
+/* ---------- admin ---------- */
+pages.admin=()=>{const T=[['items','Manage '+C.noun.toLowerCase()],['orders','Manage '+C.ordersLabel.replace('My ','').toLowerCase()],['users','Users'],['msgs','Messages'],['rep','Reports']];
+ return `<h2>Admin dashboard</h2><div class="tabs">${T.map(([k,t])=>`<a class="${AT==k?'on':''}" onclick="AT='${k}';render()">${t}</a>`).join('')}</div>`+adm[AT]()};
+adm.items=()=>{const e=items.find(x=>x.id==EID)||{};return `<div class="form"><h3>${EID?'Update':'Add'} ${C.one.toLowerCase()}</h3><div class="two"><label>Name<input id="an" value="${h(e.n)}"></label><label>Category<input id="ac" list="cl" value="${h(e.c)}"><datalist id="cl">${C.cats.map(c=>`<option value="${h(c)}">`).join('')}</datalist></label>${C.price?`<label>Price<input id="ap" type="number" min="0" value="${e.p==null?'':e.p}"></label>`:''}<label>${C.stk}<input id="as" type="number" min="0" value="${e.s==null?'':e.s}"></label><label>${C.extra}<input id="ae" value="${h(e.e)}"></label><label>Emoji<input id="ai" value="${h(e.i||C.icon)}"></label></div><label>Description<textarea id="ad2">${h(e.d)}</textarea></label><button class="btn" onclick="saveItem()">${EID?'Update':'Add'}</button> ${EID?'<button class="btn sec" onclick="EID=0;render()">Cancel edit</button>':''}</div><div class="tw"><table><tr><th></th><th>Name</th><th>Category</th>${C.price?'<th>Price</th>':''}<th>${C.stk}</th><th></th></tr>${items.map(i=>`<tr><td>${i.i}</td><td>${h(i.n)}</td><td>${h(i.c)}</td>${C.price?`<td>${money(i.p)}</td>`:''}<td>${i.s}</td><td><button class="btn sm sec" onclick="EID=${i.id};render()">Edit</button> <button class="btn sm del" onclick="delItem(${i.id})">Delete</button></td></tr>`).join('')}</table></div>`};
+function saveItem(){const n=gv('an').trim();if(!n)return toast('Name is required');const v={n,c:gv('ac').trim()||'General',p:C.price?(+gv('ap')||0):0,s:+gv('as')||0,e:gv('ae'),d:gv('ad2'),i:gv('ai')||C.icon};
+ if(EID){Object.assign(items.find(x=>x.id==EID),v);EID=0}else items.push({id:Math.max(0,...items.map(x=>x.id))+1,...v});saveAll();toast('Saved');render()}
+function delItem(id){if(!confirm('Delete this item?'))return;items=items.filter(x=>x.id!=id);saveAll();render()}
+adm.orders=()=>(C.issue?`<div class="form"><h3>Issue book for student</h3><div class="two"><label>Student<select id="iu">${users.filter(u=>u.role!='admin').map(u=>`<option value="${h(u.email)}">${h(u.name)} (${h(u.email)})</option>`).join('')}</select></label><label>Book<select id="ib">${items.filter(i=>i.s>0).map(i=>`<option value="${i.id}">${h(i.n)}</option>`).join('')}</select></label></div><button class="btn" onclick="issue()">Issue book</button></div>`:'')+(orders.length?tbl([...orders].reverse(),true):'<p class="mu">No records yet.</p>');
+function issue(){const i=items.find(x=>x.id==gv('ib'));if(!i||!gv('iu'))return toast('Select a student and a book');mk(i,1,{user:gv('iu')});saveAll();toast('Book issued');render()}
+adm.users=()=>`<div class="tw"><table><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th></th></tr>${users.map(u=>`<tr><td>${h(u.name)}</td><td>${h(u.email)}</td><td>${h(u.phone)}</td><td>${u.role}</td><td>${u.role!='admin'?`<button class="btn sm del" onclick="delU('${h(u.email)}')">Remove</button>`:''}</td></tr>`).join('')}</table></div>`;
+function delU(e){if(!confirm('Remove this user?'))return;users=users.filter(u=>u.email!=e);saveAll();render()}
+adm.msgs=()=>msgs.length?[...msgs].reverse().map(m=>`<div class="card" style="margin-bottom:10px"><b>${h(m.n)}</b> <span class="mu">${h(m.e)} · ${m.d}</span><p>${h(m.m)}</p></div>`).join(''):'<p class="mu">No messages yet.</p>';
+adm.rep=()=>{const act=orders.filter(o=>o.status!='Cancelled'),rev=act.reduce((a,o)=>a+o.total,0),top={};orders.forEach(o=>top[o.name]=(top[o.name]||0)+1);
+ const S=[[C.noun,items.length],['Users',users.filter(u=>u.role!='admin').length],[C.ordersLabel.replace('My ',''),orders.length]];if(C.price)S.push(['Revenue',money(rev)]);if(C.loan)S.push(['Fines',money(orders.reduce((a,o)=>a+fine(o),0))]);
+ return `<div class="stats">${S.map(([a,b])=>`<div class="stat"><b>${b}</b><span>${a}</span></div>`).join('')}</div><h3>By status</h3><p>${C.st.map(s=>`<span class="badge">${s}: ${orders.filter(o=>o.status==s).length}</span>`).join(' ')}</p><h3>Most popular</h3><ol>${Object.entries(top).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,c])=>`<li>${h(n)}: ${c}</li>`).join('')||'<li class="mu">No data yet</li>'}</ol><button class="btn sec" onclick="print()">Print report</button>`};
+render();
+</script></body></html>

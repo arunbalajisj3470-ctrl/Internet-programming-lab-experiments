@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 14 - ReNewMarket</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f0fdf4;color:#222}
+header{background:#15803d;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#15803d;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1050px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#15803d;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}button.d{background:#dc2626}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}.msg{color:#b91c1c}.price{color:#15803d;font-weight:bold}
+.tag{background:#dcfce7;padding:2px 8px;border-radius:10px;font-size:12px}
+</style></head><body>
+<header><h2>♻️ ReNewMarket</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+let users=L('rm_users',[{u:'seller1',p:'1234',name:'Asha'},{u:'buyer1',p:'1234',name:'Bala'}]);
+let cats=L('rm_cats',['Electronics','Furniture','Clothing','Collectibles']);
+let goods=L('rm_goods',[{id:1,name:'Used Laptop (i5)',cat:'Electronics',price:18000,seller:'seller1',desc:'3 years old, good battery.'},{id:2,name:'Wooden Study Table',cat:'Furniture',price:2500,seller:'seller1',desc:'Solid teak, minor scratches.'},{id:3,name:'Vintage Coins Set',cat:'Collectibles',price:1200,seller:'seller1',desc:'50 assorted coins.'}]);
+let orders=L('rm_orders',[]),sess=L('rm_sess',null),page='shop';// sess {role:'admin'|'user',u}
+const save=()=>{S('rm_users',users);S('rm_cats',cats);S('rm_goods',goods);S('rm_orders',orders);S('rm_sess',sess)};
+function go(p){page=p;render()}
+function render(){
+ let n='<button onclick="go(\'shop\')">Marketplace</button>';
+ if(!sess)n+='<button onclick="go(\'login\')">Login</button>';
+ else if(sess.role==='admin')n+='<button onclick="go(\'users\')">User Management</button><button onclick="go(\'cats\')">Categories</button><button onclick="go(\'goods\')">Commodities</button><button onclick="go(\'orders\')">Orders</button>';
+ else n+='<button onclick="go(\'sell\')">Sell an item</button><button onclick="go(\'my\')">My orders</button>';
+ if(sess)n+=`<button onclick="sess=null;save();go('shop')">Logout (${sess.u})</button>`;
+ $('nav').innerHTML=n;$('app').innerHTML=pages[page]();
+}
+const pages={
+login:()=>`<div class="card"><h3>Login</h3><p><small>Admin: admin / admin123 &nbsp; Users: seller1 / 1234, buyer1 / 1234</small></p><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="login()">Login</button><div id="lm" class="msg"></div></div>`,
+shop:()=>`<div class="card"><input id="sq" placeholder="Search items" oninput="shopList()"><select id="sc" onchange="shopList()"><option value="">All categories</option>${cats.map(c=>`<option>${c}</option>`).join('')}</select><select id="sp" onchange="shopList()"><option value="">Any price</option><option value="2000">Under ₹2,000</option><option value="10000">Under ₹10,000</option><option value="50000">Under ₹50,000</option></select></div><div id="gl" class="grid"></div>`,
+users:()=>`<div class="card"><h3>Set login account & password</h3><input id="nu" placeholder="Username"><input id="nn" placeholder="Name"><input id="np" placeholder="Password"><button class="p" onclick="addUser()">Create account</button><div id="lm" class="msg"></div></div>
+ <div class="card"><h3>Users</h3><table><tr><th>Username</th><th>Name</th><th>Password</th><th></th></tr>${users.map((x,i)=>`<tr><td>${x.u}</td><td>${x.name}</td><td>${x.p}</td><td><button class="p" onclick="editUser(${i})">Edit</button><button class="p d" onclick="delUser(${i})">Delete</button></td></tr>`).join('')}</table></div>`,
+cats:()=>`<div class="card"><h3>Category management</h3><input id="nc" placeholder="New category"><button class="p" onclick="addCat()">Add category</button><table>${cats.map((c,i)=>`<tr><td>${c}</td><td>${goods.filter(g=>g.cat===c).length} items</td><td><button class="p d" onclick="delCat(${i})">Delete</button></td></tr>`).join('')}</table></div>`,
+goods:()=>`<div class="card"><h3>Commodity management</h3><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Seller</th><th>Description</th><th></th></tr>${goods.map(g=>`<tr><td>${g.name}</td><td>${g.cat}</td><td>₹${g.price}</td><td>${g.seller}</td><td>${g.desc}</td><td><button class="p" onclick="editGood(${g.id})">Edit</button><button class="p d" onclick="delGood(${g.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan=6>No commodities</td></tr>'}</table></div>`,
+orders:()=>`<div class="card"><h3>Order management</h3><table><tr><th>Order</th><th>Item</th><th>Buyer</th><th>Price</th><th>Logistics status</th><th></th></tr>${orders.map(o=>`<tr><td>#${o.id}</td><td>${o.item}</td><td>${o.buyer}</td><td>₹${o.price}</td><td><span class="tag">${o.status}</span></td><td><select onchange="setStatus(${o.id},this.value)">${['Pending','Shipped','Received'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select><button class="p d" onclick="delOrder(${o.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan=6>No orders</td></tr>'}</table></div>`,
+sell:()=>`<div class="card"><h3>Create a listing</h3><input id="gn" placeholder="Item name"><select id="gc">${cats.map(c=>`<option>${c}</option>`).join('')}</select><input id="gp" type="number" placeholder="Price ₹"><br><textarea id="gd" rows="3" cols="50" placeholder="Description"></textarea><br><button class="p" onclick="addGood()">Publish listing</button><div id="lm" class="msg"></div></div><div class="card"><h3>My listings</h3><table>${goods.filter(g=>g.seller===sess.u).map(g=>`<tr><td>${g.name}</td><td>₹${g.price}</td><td><button class="p d" onclick="delGood(${g.id})">Remove</button></td></tr>`).join('')}</table></div>`,
+my:()=>`<div class="card"><h3>My orders</h3><table><tr><th>Order</th><th>Item</th><th>Price</th><th>Status</th><th></th></tr>${orders.filter(o=>o.buyer===sess.u).map(o=>`<tr><td>#${o.id}</td><td>${o.item}</td><td>₹${o.price}</td><td>${o.status}</td><td>${o.status==='Shipped'?`<button class="p" onclick="setStatus(${o.id},'Received');render()">Mark received</button>`:''}</td></tr>`).join('')||'<tr><td colspan=5>No orders</td></tr>'}</table></div>`
+};
+function shopList(){const q=V('sq').toLowerCase(),c=V('sc'),p=+V('sp')||1e12;
+ $('gl').innerHTML=goods.filter(g=>g.name.toLowerCase().includes(q)&&(!c||g.cat===c)&&g.price<=p).map(g=>`<div class="card"><b>${g.name}</b><br><span class="tag">${g.cat}</span><div class="price">₹${g.price}</div><small>${g.desc}</small><br><small>Seller: ${g.seller}</small><br><button class="p" onclick="buy(${g.id})">Buy now</button></div>`).join('')||'<p>No items found.</p>'}
+function login(){if(V('lu')==='admin'&&$('lp').value==='admin123'){sess={role:'admin',u:'admin'};save();return go('users')}
+ const x=users.find(a=>a.u===V('lu')&&a.p===$('lp').value);if(!x){$('lm').textContent='Login failed: wrong username or password';return}sess={role:'user',u:x.u};save();go('shop')}
+function addUser(){if(!V('nu')||!V('np')){$('lm').textContent='Username and password required';return}if(users.find(x=>x.u===V('nu'))){$('lm').textContent='Username exists';return}users.push({u:V('nu'),name:V('nn')||V('nu'),p:V('np')});save();render()}
+function editUser(i){const n=prompt('Name',users[i].name);if(n===null)return;const p=prompt('Password',users[i].p);users[i].name=n;if(p)users[i].p=p;save();render()}
+function delUser(i){if(confirm('Delete user?')){users.splice(i,1);save();render()}}
+function addCat(){const c=V('nc');if(c&&!cats.includes(c)){cats.push(c);save();render()}}
+function delCat(i){if(confirm('Delete category?')){cats.splice(i,1);save();render()}}
+function editGood(id){const g=goods.find(x=>x.id===id),n=prompt('Name',g.name);if(n===null)return;const p=prompt('Price',g.price);g.name=n||g.name;if(p&&+p>0)g.price=+p;save();render()}
+function delGood(id){if(confirm('Delete commodity?')){goods=goods.filter(g=>g.id!==id);save();render()}}
+function addGood(){if(!V('gn')||!V('gp')){$('lm').textContent='Name and price required';return}goods.push({id:Date.now(),name:V('gn'),cat:V('gc'),price:+V('gp'),seller:sess.u,desc:V('gd')});save();render()}
+function buy(id){if(!sess||sess.role!=='user'){alert('Please login as a user to buy.');return go('login')}const g=goods.find(x=>x.id===id);
+ if(g.seller===sess.u){alert('You cannot buy your own item');return}orders.push({id:Date.now()%100000,item:g.name,buyer:sess.u,price:g.price,status:'Pending'});save();alert('Order placed. Arrange pick-up/delivery with the seller.')}
+function setStatus(id,s){orders.find(o=>o.id===id).status=s;save()}
+function delOrder(id){if(confirm('Delete order?')){orders=orders.filter(o=>o.id!==id);save();render()}}
+render();if(page==='shop')shopList();
+const _r=render;render=function(){_r();if(page==='shop')shopList()};
+</script></body></html>

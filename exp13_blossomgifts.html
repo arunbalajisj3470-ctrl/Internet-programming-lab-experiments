@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 13 - BlossomGifts</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#fdf2f8;color:#222}
+header{background:#be185d;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#be185d;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1050px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#be185d;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}button.d{background:#6b7280}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.em{font-size:48px;text-align:center}.chip{display:inline-block;background:#fce7f3;color:#9d174d;padding:3px 10px;border-radius:12px;margin:2px;font-size:13px;cursor:pointer}
+.msg{color:#b91c1c}.price{color:#be185d;font-weight:bold}
+</style></head><body>
+<header><h2>🌸 BlossomGifts</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+// Categories with subcategories (occasion based)
+const cats=[{n:'Birthday',e:'🎂',subs:['Bouquets','Gift Baskets','Personalised']},{n:'Anniversary',e:'💑',subs:['Roses','Luxury Hampers']},{n:'Wedding',e:'💒',subs:['Floral Arrangements','Gift Sets']},{n:'Get Well Soon',e:'💐',subs:['Bouquets','Plants']},{n:'Festivals',e:'🪔',subs:['Hampers','Plants']}];
+let items=L('bg_items',[
+{id:1,name:'Red Rose Bouquet',cat:'Anniversary',sub:'Roses',price:799,stock:20,desc:'12 fresh red roses with greens.',e:'🌹',pop:30},
+{id:2,name:'Birthday Surprise Basket',cat:'Birthday',sub:'Gift Baskets',price:1299,stock:10,desc:'Chocolates, flowers and a greeting card.',e:'🧺',pop:45},
+{id:3,name:'Personalised Photo Mug',cat:'Birthday',sub:'Personalised',price:449,stock:25,desc:'Ceramic mug with your photo and name.',e:'☕',pop:22},
+{id:4,name:'Mixed Lily Arrangement',cat:'Wedding',sub:'Floral Arrangements',price:1599,stock:6,desc:'Elegant lilies in a glass vase.',e:'🌷',pop:18},
+{id:5,name:'Get Well Orchid Plant',cat:'Get Well Soon',sub:'Plants',price:899,stock:0,desc:'Potted orchid, long-lasting blooms.',e:'🪴',pop:12},
+{id:6,name:'Diwali Gift Hamper',cat:'Festivals',sub:'Hampers',price:1899,stock:15,desc:'Sweets, dry fruits and diyas.',e:'🎁',pop:38},
+{id:7,name:'Luxury Chocolate Hamper',cat:'Anniversary',sub:'Luxury Hampers',price:2499,stock:8,desc:'Premium assorted chocolates and wine-free mocktail set.',e:'🍫',pop:27}]);
+let cart=L('bg_cart',[]),orders=L('bg_orders',[]),admin=L('bg_admin',false),page='home',filt={cat:'',sub:'',q:''},detail=null;
+const save=()=>{S('bg_items',items);S('bg_cart',cart);S('bg_orders',orders);S('bg_admin',admin)};
+// Most popular categories first
+const catPop=c=>items.filter(i=>i.cat===c.n).reduce((s,i)=>s+i.pop,0);
+const sortedCats=()=>[...cats].sort((a,b)=>catPop(b)-catPop(a));
+function go(p){page=p;render()}
+function render(){
+ $('nav').innerHTML=`<button onclick="filt={cat:'',sub:'',q:''};go('home')">Home</button><button onclick="go('cart')">Cart (${cart.reduce((s,c)=>s+c.qty,0)})</button><button onclick="go('track')">Order Status</button><button onclick="go('hist')">Order History</button>`+(admin?`<button onclick="go('adm')">Admin Panel</button><button onclick="go('cust')">Customers</button><button onclick="admin=false;save();go('home')">Logout</button>`:`<button onclick="go('login')">Admin Login</button>`);
+ $('app').innerHTML=pages[page]();
+}
+const pages={
+home:()=>{const list=items.filter(i=>(!filt.cat||i.cat===filt.cat)&&(!filt.sub||i.sub===filt.sub)&&(!filt.q||(i.name+i.desc).toLowerCase().includes(filt.q.toLowerCase())));
+ return`<div class="card"><input id="sq" placeholder="Search gifts & flowers" value="${filt.q}"><button class="p" onclick="filt.q=V('sq');render()">Search</button>
+ <h3>Shop by occasion</h3>${sortedCats().map(c=>`<div><b>${c.e} <span class="chip" onclick="filt={cat:'${c.n}',sub:'',q:''};render()">${c.n}</span></b> ${c.subs.map(s=>`<span class="chip" onclick="filt={cat:'${c.n}',sub:'${s}',q:''};render()">${s}</span>`).join('')}</div>`).join('')}</div>
+ ${detail?detailHtml():''}<div class="grid">${list.map(i=>`<div class="card"><div class="em">${i.e}</div><b>${i.name}</b><br><small>${i.cat} › ${i.sub}</small><div class="price">₹${i.price}</div>${i.stock>0?`<small>In stock (${i.stock})</small>`:'<small class="msg">Out of stock</small>'}<br><button class="p d" onclick="detail=${i.id};render();scrollTo(0,0)">Details</button><button class="p" ${i.stock>0?'':'disabled'} onclick="addCart(${i.id})">Add to cart</button></div>`).join('')||'<p>No items found.</p>'}</div>`},
+cart:()=>{const tot=cart.reduce((s,c)=>s+c.qty*items.find(i=>i.id===c.id).price,0);
+ return`<div class="card"><h3>Shopping cart</h3><table><tr><th>Item</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr>${cart.map(c=>{const i=items.find(x=>x.id===c.id);return`<tr><td>${i.e} ${i.name}</td><td>₹${i.price}</td><td><input type="number" min="1" max="${i.stock}" value="${c.qty}" style="width:60px" onchange="setQty(${c.id},this.value)"></td><td>₹${c.qty*i.price}</td><td><button class="p d" onclick="rmCart(${c.id})">Remove</button></td></tr>`}).join('')||'<tr><td colspan=5>Cart is empty</td></tr>'}</table><h3>Total: ₹${tot}</h3></div>
+ ${cart.length?`<div class="card"><h3>Checkout</h3><input id="cn" placeholder="Your name"><input id="cp" placeholder="Phone"><input id="ce" placeholder="Email"><br><textarea id="ca" placeholder="Delivery address" rows="2" cols="40"></textarea><br>Delivery date <input id="cd" type="date"> time <select id="ct"><option>9 AM - 12 PM</option><option>12 PM - 4 PM</option><option>4 PM - 8 PM</option></select><br><input id="cm" placeholder="Gift message (optional)" size="40"><br><button class="p" onclick="checkout()">Place order</button><div id="lm" class="msg"></div></div>`:''}`},
+track:()=>`<div class="card"><h3>Check order status</h3><input id="oid" placeholder="Order ID e.g. BG1001"><button class="p" onclick="trackOrder()">Check</button><div id="tr"></div></div>`,
+hist:()=>`<div class="card"><h3>Order history</h3><input id="hp" placeholder="Enter your phone number"><button class="p" onclick="showHist()">Show</button><div id="hr"></div></div>`,
+login:()=>`<div class="card"><h3>Admin Login</h3><p><small>Demo: admin / admin123</small></p><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="login()">Login</button><div id="lm" class="msg"></div></div>`,
+adm:()=>`<div class="card"><h3>Add new item</h3><input id="an" placeholder="Name"><select id="ac">${cats.map(c=>`<option>${c.n}</option>`).join('')}</select><input id="as" placeholder="Subcategory"><input id="ap" type="number" placeholder="Price"><input id="ak" type="number" placeholder="Stock"><input id="ae" placeholder="Emoji" size="3"><input id="ad" placeholder="Description" size="30"><button class="p" onclick="addItem()">Add</button><div id="lm" class="msg"></div></div>
+ <div class="card"><h3>Manage items</h3><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th><th>Description</th><th></th></tr>${items.map(i=>`<tr><td>${i.e} ${i.name}</td><td>${i.cat}›${i.sub}</td><td>₹${i.price}</td><td>${i.stock}</td><td>${i.desc}</td><td><button class="p" onclick="editPrice(${i.id})">Price</button><button class="p" onclick="editDesc(${i.id})">Description</button><button class="p d" onclick="delItem(${i.id})">Remove</button></td></tr>`).join('')}</table></div>
+ <div class="card"><h3>Update order status</h3><table><tr><th>Order</th><th>Customer</th><th>Status</th><th></th></tr>${orders.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.status}</td><td><select onchange="setStatus('${o.id}',this.value)">${['Placed','Packed','Out for delivery','Delivered'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')||'<tr><td colspan=4>No orders</td></tr>'}</table></div>`,
+cust:()=>`<div class="card"><h3>Customers who checked out</h3><table><tr><th>Order</th><th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Delivery</th><th>Amount</th></tr>${orders.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.phone}</td><td>${o.email}</td><td>${o.addr}</td><td>${o.date} ${o.time}</td><td>₹${o.total}</td></tr>`).join('')||'<tr><td colspan=7>No customers yet</td></tr>'}</table></div>`
+};
+function detailHtml(){const i=items.find(x=>x.id===detail);return`<div class="card"><h3>${i.e} ${i.name}</h3><p>${i.desc}</p><p>Category: ${i.cat} › ${i.sub} | <span class="price">₹${i.price}</span> | ${i.stock>0?'Available: '+i.stock:'Currently unavailable'}</p><button class="p d" onclick="detail=null;render()">Close</button></div>`}
+function addCart(id){const c=cart.find(x=>x.id===id),i=items.find(x=>x.id===id);if(c){if(c.qty<i.stock)c.qty++}else cart.push({id,qty:1});save();render()}
+function setQty(id,q){const i=items.find(x=>x.id===id);q=Math.max(1,Math.min(+q||1,i.stock));cart.find(x=>x.id===id).qty=q;save();render()}
+function rmCart(id){cart=cart.filter(c=>c.id!==id);save();render()}
+function checkout(){if(!V('cn')||!V('cp')||!V('ca')||!V('cd')){$('lm').textContent='Name, phone, address and delivery date are required';return}
+ const total=cart.reduce((s,c)=>s+c.qty*items.find(i=>i.id===c.id).price,0),id='BG'+(1001+orders.length);
+ orders.push({id,name:V('cn'),phone:V('cp'),email:V('ce'),addr:V('ca'),date:V('cd'),time:V('ct'),msg:V('cm'),total,lines:cart.map(c=>({n:items.find(i=>i.id===c.id).name,q:c.qty})),status:'Placed',placed:new Date().toLocaleString()});
+ cart.forEach(c=>items.find(i=>i.id===c.id).stock-=c.qty);cart=[];save();alert('Order '+id+' placed! A confirmation will be sent to '+(V('ce')||V('cp')||'you')+'.');go('track')}
+function trackOrder(){const o=orders.find(x=>x.id.toLowerCase()===V('oid').toLowerCase());$('tr').innerHTML=o?`<p><b>${o.id}</b> — ${o.name}<br>Status: <b>${o.status}</b><br>Delivery: ${o.date}, ${o.time}</p>`:'<p class="msg">Order not found</p>'}
+function showHist(){const r=orders.filter(o=>o.phone===V('hp'));$('hr').innerHTML=r.length?`<table><tr><th>ID</th><th>Placed</th><th>Items</th><th>Total</th><th>Status</th></tr>${r.map(o=>`<tr><td>${o.id}</td><td>${o.placed}</td><td>${o.lines.map(l=>l.n+' ×'+l.q).join(', ')}</td><td>₹${o.total}</td><td>${o.status}</td></tr>`).join('')}</table>`:'<p>No orders found for this number.</p>'}
+function login(){if(V('lu')==='admin'&&$('lp').value==='admin123'){admin=true;save();go('adm')}else $('lm').textContent='Invalid credentials'}
+function addItem(){if(!V('an')||!V('ap')){$('lm').textContent='Name and price required';return}items.push({id:Date.now(),name:V('an'),cat:V('ac'),sub:V('as')||'General',price:+V('ap'),stock:+V('ak')||0,desc:V('ad'),e:V('ae')||'🎁',pop:0});save();render()}
+function editPrice(id){const i=items.find(x=>x.id===id),p=prompt('New price for '+i.name,i.price);if(p&&+p>0){i.price=+p;save();render()}}
+function editDesc(id){const i=items.find(x=>x.id===id),d=prompt('New description',i.desc);if(d!==null){i.desc=d;save();render()}}
+function delItem(id){if(confirm('Remove this item?')){items=items.filter(i=>i.id!==id);cart=cart.filter(c=>c.id!==id);save();render()}}
+function setStatus(id,s){orders.find(o=>o.id===id).status=s;save()}
+render();
+</script></body></html>

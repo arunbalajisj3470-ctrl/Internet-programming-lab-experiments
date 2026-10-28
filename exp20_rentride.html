@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 20 - RentRide</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f0f9ff;color:#222}
+header{background:#0369a1;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#0369a1;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1050px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#0369a1;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}button.d{background:#dc2626}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:14px;vertical-align:top}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.em{font-size:56px;text-align:center;background:#e0f2fe;border-radius:8px;padding:8px}.msg{color:#b91c1c}.price{color:#0369a1;font-weight:bold}.tag{background:#e0f2fe;padding:2px 8px;border-radius:10px;font-size:12px}
+img.v{width:100%;height:130px;object-fit:cover;border-radius:8px}
+</style></head><body>
+<header><h2>🚗 RentRide</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+const EM={Car:'🚗',SUV:'🚙',Truck:'🚚',Bike:'🏍',Van:'🚐'};
+let vehicles=L('rr_v',[{id:1,name:'Hyundai i20',type:'Car',price:1800,loc:'Chennai',seats:5,img:'',avail:true},{id:2,name:'Toyota Innova',type:'SUV',price:3200,loc:'Chennai',seats:7,img:'',avail:true},{id:3,name:'Tata 407 Truck',type:'Truck',price:4500,loc:'Madurai',seats:3,img:'',avail:true},{id:4,name:'Mahindra Thar',type:'SUV',price:3800,loc:'Coimbatore',seats:4,img:'',avail:true},{id:5,name:'Maruti Swift',type:'Car',price:1500,loc:'Madurai',seats:5,img:'',avail:true}]);
+let users=L('rr_u',[{u:'user1',p:'1234',name:'Vimal',phone:'9000000044',email:'vimal@mail.com',addr:'Anna Nagar, Chennai'}]);
+let bookings=L('rr_b',[]),reviews=L('rr_r',[]),sess=L('rr_s',null),page='home';
+const save=()=>{S('rr_v',vehicles);S('rr_u',users);S('rr_b',bookings);S('rr_r',reviews);S('rr_s',sess)};
+const rating=id=>{const r=reviews.filter(x=>x.vid===id);return r.length?(r.reduce((s,x)=>s+ +x.rate,0)/r.length).toFixed(1)+'★ ('+r.length+')':'No reviews'};
+function go(p){page=p;render()}
+function render(){
+ let n='<button onclick="go(\'home\')">Vehicles</button>';
+ if(!sess)n+='<button onclick="go(\'ureg\')">Register</button><button onclick="go(\'ulogin\')">User Login</button><button onclick="go(\'alogin\')">Admin Login</button>';
+ else if(sess.role==='admin')n+='<button onclick="go(\'addv\')">Add Vehicle</button><button onclick="go(\'mgv\')">Manage Vehicles</button><button onclick="go(\'mgb\')">Manage Bookings</button><button onclick="go(\'prof\')">My Profile</button>';
+ else n+='<button onclick="go(\'status\')">Booking Status</button><button onclick="go(\'prof\')">My Profile</button>';
+ if(sess)n+=`<button onclick="sess=null;save();go('home')">Logout (${sess.name})</button>`;
+ $('nav').innerHTML=n;$('app').innerHTML=pages[page]();if(page==='home')search();
+}
+const vimg=v=>v.img?`<img class="v" src="${v.img}">`:`<div class="em">${EM[v.type]||'🚗'}</div>`;
+const lg=(t,fn,h='')=>`<div class="card"><h3>${t}</h3>${h}<input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="${fn}()">Login</button><div id="lm" class="msg"></div></div>`;
+const pages={
+home:()=>`<div class="card"><h3>Search vehicles</h3><select id="st"><option value="">Any type</option>${Object.keys(EM).map(t=>`<option>${t}</option>`).join('')}</select><input id="sl" placeholder="Location" oninput="search()"><input id="sm" type="number" placeholder="Max price/day ₹" oninput="search()"><label>From <input id="sd1" type="date"></label><label>To <input id="sd2" type="date"></label><button class="p" onclick="search()">Search</button></div><div id="vl" class="grid"></div><div id="bk"></div>`,
+alogin:()=>lg('Admin Login','adminLogin','<p><small>Demo: admin / admin123</small></p>'),ulogin:()=>lg('User Login','userLogin','<p><small>Demo: user1 / 1234</small></p>'),
+ureg:()=>`<div class="card"><h3>User Registration</h3><input id="n" placeholder="Full name"><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><input id="ph" placeholder="Customer / mobile no."><input id="em" placeholder="Email"><br><input id="ad" placeholder="Address" size="50"><button class="p" onclick="regUser()">Register</button><div id="lm" class="msg"></div></div>`,
+addv:()=>`<div class="card"><h3>Add vehicle</h3><input id="vn" placeholder="Vehicle name / model"><select id="vt">${Object.keys(EM).map(t=>`<option>${t}</option>`).join('')}</select><input id="vp" type="number" placeholder="Price/day ₹"><input id="vl" placeholder="Location"><input id="vs" type="number" placeholder="Seats"><br>Photo: <input type="file" id="vi" accept="image/*"><button class="p" onclick="addVeh()">Add</button><div id="lm" class="msg"></div></div>`,
+mgv:()=>`<div class="card"><h3>Manage vehicle details</h3><table><tr><th>Vehicle</th><th>Type</th><th>Price</th><th>Location</th><th>Available</th><th></th></tr>${vehicles.map(v=>`<tr><td>${v.name}</td><td>${v.type}</td><td>₹${v.price}</td><td>${v.loc}</td><td>${v.avail?'Yes':'No'}</td><td><button class="p" onclick="editVeh(${v.id})">Edit</button><button class="p" onclick="toggleAvail(${v.id})">Toggle availability</button><button class="p d" onclick="delVeh(${v.id})">Delete</button></td></tr>`).join('')}</table></div>`,
+mgb:()=>`<div class="card"><h3>Booking requests</h3><table><tr><th>ID</th><th>Vehicle</th><th>Customer</th><th>Dates</th><th>Amount</th><th>Status</th><th></th></tr>${bookings.map(b=>`<tr><td>${b.id}</td><td>${b.vname}</td><td>${b.name}<br><small>${b.cno} · ${b.addr}</small></td><td>${b.from} → ${b.to}</td><td>₹${b.amount}</td><td><span class="tag">${b.status}</span></td><td>${b.status==='Pending'?`<button class="p" onclick="setB(${b.id},'Approved')">Approve</button><button class="p d" onclick="setB(${b.id},'Rejected')">Reject</button>`:b.status==='Approved'?`<button class="p" onclick="setB(${b.id},'Returned')">Mark returned</button>`:''}</td></tr>`).join('')||'<tr><td colspan=7>No bookings</td></tr>'}</table></div>`,
+status:()=>`<div class="card"><h3>My bookings</h3><table><tr><th>ID</th><th>Vehicle</th><th>Dates</th><th>Amount</th><th>Status</th><th>Review</th></tr>${bookings.filter(b=>b.user===sess.id).map(b=>`<tr><td>${b.id}</td><td>${b.vname}</td><td>${b.from} → ${b.to}</td><td>₹${b.amount}</td><td><span class="tag">${b.status}</span></td><td>${['Approved','Returned'].includes(b.status)?`<button class="p" onclick="review(${b.vid})">Write review</button>`:'-'}${b.status==='Pending'?`<button class="p d" onclick="setB(${b.id},'Cancelled')">Cancel</button>`:''}</td></tr>`).join('')||'<tr><td colspan=6>No bookings</td></tr>'}</table></div>`,
+prof:()=>{if(sess.role==='admin')return'<div class="card"><h3>Admin profile</h3><p>Username: admin<br>Role: Administrator<br>Total vehicles: '+vehicles.length+'<br>Total bookings: '+bookings.length+'</p></div>';const u=users.find(x=>x.u===sess.id);return`<div class="card"><h3>My profile</h3><p>Name: ${u.name}<br>Customer no: ${u.phone}<br>Email: ${u.email}<br>Address: ${u.addr}</p><button class="p" onclick="editProf()">Edit profile</button></div>`}
+};
+function search(){const t=V('st'),l=V('sl').toLowerCase(),m=+V('sm')||1e12;const r=vehicles.filter(v=>(!t||v.type===t)&&(!l||v.loc.toLowerCase().includes(l))&&v.price<=m);
+ $('vl').innerHTML=r.map(v=>`<div class="card">${vimg(v)}<b>${v.name}</b><br><span class="tag">${v.type}</span> <span class="tag">${v.seats} seats</span><br>📍 ${v.loc}<div class="price">₹${v.price}/day</div><small>${rating(v.id)}</small><br>${v.avail?`<button class="p" onclick="bookForm(${v.id})">Select & Book</button>`:'<small class="msg">Not available</small>'}<button class="p" onclick="showRev(${v.id})">Reviews</button></div>`).join('')||'<p>No vehicles match.</p>'}
+function bookForm(id){if(!sess||sess.role!=='user'){alert('Please login as a user to book.');return go('ulogin')}const v=vehicles.find(x=>x.id===id),u=users.find(x=>x.u===sess.id);
+ $('bk').innerHTML=`<div class="card"><h3>Book: ${v.name} (₹${v.price}/day)</h3><input id="bn" placeholder="Name" value="${u.name}"><input id="bc" placeholder="Customer no." value="${u.phone}"><input id="ba" placeholder="Address" value="${u.addr}" size="30"><input id="bt" value="${v.type}" readonly size="8"><br><label>From <input id="b1" type="date" value="${V('sd1')}"></label><label>To <input id="b2" type="date" value="${V('sd2')}"></label><button class="p" onclick="book(${id})">Confirm booking</button><div id="bm" class="msg"></div></div>`;$('bk').scrollIntoView({behavior:'smooth'})}
+function book(id){const v=vehicles.find(x=>x.id===id),a=V('b1'),b=V('b2');if(!V('bn')||!V('bc')||!V('ba')||!a||!b){$('bm').textContent='Fill all details and dates';return}
+ const days=Math.round((new Date(b)-new Date(a))/864e5)+1;if(days<1||new Date(a)<new Date(new Date().toDateString())){$('bm').textContent='Invalid rental dates';return}
+ if(bookings.some(x=>x.vid===id&&['Pending','Approved'].includes(x.status)&&!(b<x.from||a>x.to))){$('bm').textContent='Vehicle already booked for these dates';return}
+ bookings.push({id:5001+bookings.length,vid:id,vname:v.name,user:sess.id,name:V('bn'),cno:V('bc'),addr:V('ba'),type:v.type,from:a,to:b,amount:days*v.price,status:'Pending'});save();alert('Booking request sent for '+days+' day(s). Total ₹'+days*v.price+'. Awaiting admin approval.');go('status')}
+function setB(id,s){bookings.find(b=>b.id===id).status=s;save();render()}
+function review(vid){const r=prompt('Rating 1-5',5);if(!r||r<1||r>5)return;const t=prompt('Your review')||'';reviews.push({vid,user:sess.id,rate:r,text:t});save();alert('Thanks for your review!');render()}
+function showRev(id){const r=reviews.filter(x=>x.vid===id);alert(r.length?r.map(x=>x.rate+'★ '+x.user+': '+x.text).join('\n'):'No reviews yet')}
+function adminLogin(){if(V('lu')==='admin'&&$('lp').value==='admin123'){sess={role:'admin',id:'admin',name:'Admin'};save();go('mgb')}else $('lm').textContent='Invalid credentials'}
+function userLogin(){const u=users.find(x=>x.u===V('lu')&&x.p===$('lp').value);if(!u){$('lm').textContent='Invalid credentials';return}sess={role:'user',id:u.u,name:u.name};save();go('home')}
+function regUser(){if(!V('n')||!V('u')||!V('p')||!V('ph')){$('lm').textContent='Name, username, password and customer no. required';return}if(users.find(x=>x.u===V('u'))){$('lm').textContent='Username exists';return}users.push({u:V('u'),p:$('p').value,name:V('n'),phone:V('ph'),email:V('em'),addr:V('ad')});save();alert('Registered');go('ulogin')}
+function addVeh(){if(!V('vn')||!V('vp')){$('lm').textContent='Name and price required';return}const f=$('vi').files[0];const push=img=>{vehicles.push({id:Date.now(),name:V('vn'),type:V('vt'),price:+V('vp'),loc:V('vl')||'Chennai',seats:+V('vs')||4,img,avail:true});try{save()}catch(e){vehicles[vehicles.length-1].img='';save()}go('mgv')};
+ if(f){const r=new FileReader();r.onload=()=>push(r.result);r.readAsDataURL(f)}else push('')}
+function editVeh(id){const v=vehicles.find(x=>x.id===id),n=prompt('Name',v.name);if(n===null)return;const p=prompt('Price per day',v.price),l=prompt('Location',v.loc);v.name=n||v.name;if(p&&+p>0)v.price=+p;if(l)v.loc=l;save();render()}
+function toggleAvail(id){const v=vehicles.find(x=>x.id===id);v.avail=!v.avail;save();render()}
+function delVeh(id){if(confirm('Delete vehicle?')){vehicles=vehicles.filter(v=>v.id!==id);save();render()}}
+function editProf(){const u=users.find(x=>x.u===sess.id),n=prompt('Name',u.name);if(n===null)return;const e=prompt('Email',u.email),a=prompt('Address',u.addr);u.name=n||u.name;u.email=e??u.email;u.addr=a??u.addr;sess.name=u.name;save();render()}
+render();
+</script></body></html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 18 - AgriMart</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f7fee7;color:#222}
+header{background:#4d7c0f;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#4d7c0f;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1050px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#4d7c0f;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}button.d{background:#dc2626}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:14px;vertical-align:middle}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.msg{color:#b91c1c}.price{color:#4d7c0f;font-weight:bold}.tag{background:#ecfccb;padding:2px 8px;border-radius:10px;font-size:12px}.otp{background:#fef9c3;padding:8px;border-radius:6px;display:inline-block}
+img.pi{width:100%;height:120px;object-fit:cover;border-radius:6px;background:#ecfccb}.em{font-size:50px;text-align:center;background:#ecfccb;border-radius:6px;padding:10px}
+</style></head><body>
+<header><h2>🌾 AgriMart</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+let farmers=L('ag_f',[{u:'farmer1',p:'1234',name:'Murugan',phone:'9000000011'}]),publics=L('ag_p',[{u:'buyer1',p:'1234',name:'Lakshmi',phone:'9000000022',wallet:5000,addr:[]}]);
+let prods=L('ag_pr',[{id:1,farmer:'farmer1',name:'Hybrid Paddy Seeds (5kg)',cat:'Seeds',price:650,stock:40,desc:'High-yield, 120-day variety.',img:''},{id:2,farmer:'farmer1',name:'Organic Compost (25kg)',cat:'Fertilizers',price:420,stock:60,desc:'Vermicompost, rich in nutrients.',img:''},{id:3,farmer:'farmer1',name:'Hand Sprayer 16L',cat:'Equipment',price:1350,stock:12,desc:'Knapsack sprayer with brass nozzle.',img:''},{id:4,farmer:'farmer1',name:'Neem Oil Pesticide 1L',cat:'Pesticides',price:380,stock:30,desc:'Natural pest control.',img:''}]);
+let orders=L('ag_o',[]),cart=L('ag_cart',[]),sess=L('ag_sess',null),page='home',otp=null,pending=null;
+const save=()=>{S('ag_f',farmers);S('ag_p',publics);S('ag_pr',prods);S('ag_o',orders);S('ag_cart',cart);S('ag_sess',sess)};
+const EM={Seeds:'🌱',Fertilizers:'🧪',Pesticides:'🐛',Equipment:'🚜',Tools:'🛠'},CATS=Object.keys(EM);
+const me=()=>sess.role==='farmer'?farmers.find(x=>x.u===sess.id):publics.find(x=>x.u===sess.id);
+const rand=()=>String(Math.floor(1000+Math.random()*9000));
+function go(p){page=p;render()}
+function render(){
+ let n='<button onclick="go(\'home\')">Shop</button>';
+ if(!sess)n+='<button onclick="go(\'freg\')">Farmer Register</button><button onclick="go(\'flogin\')">Farmer Login</button><button onclick="go(\'preg\')">Public Register</button><button onclick="go(\'plogin\')">Public Login</button>';
+ else if(sess.role==='farmer')n+='<button onclick="go(\'addp\')">Add Product</button><button onclick="go(\'myp\')">My Products</button><button onclick="go(\'forders\')">Manage Orders</button><button onclick="go(\'sales\')">My Sales</button>';
+ else n+='<button onclick="go(\'cart\')">Cart ('+cart.length+')</button><button onclick="go(\'orders\')">My Orders</button><button onclick="go(\'acct\')">My Account</button>';
+ if(sess)n+=`<button onclick="sess=null;save();go('home')">Logout (${sess.name})</button>`;
+ $('nav').innerHTML=n;$('app').innerHTML=pages[page]();if(page==='home')list();
+}
+const prodImg=p=>p.img?`<img class="pi" src="${p.img}">`:`<div class="em">${EM[p.cat]||'📦'}</div>`;
+const reg=(role)=>`<div class="card"><h3>${role==='f'?'Farmer':'Customer'} Registration</h3>${pending&&pending.role===role?`<div class="otp">📱 OTP sent to ${pending.phone}: <b>${otp}</b></div><br><input id="ot" placeholder="Enter OTP"><button class="p" onclick="verifyReg()">Verify & complete</button>`:`<input id="n" placeholder="Name"><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><input id="ph" placeholder="Mobile"><button class="p" onclick="startReg('${role}')">Send OTP</button>`}<div id="lm" class="msg"></div></div>`;
+const lg=(t,fn)=>`<div class="card"><h3>${t}</h3><p><small>Demo: farmer1 / 1234 · buyer1 / 1234</small></p><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="${fn}()">Login</button><div id="lm" class="msg"></div></div>`;
+const pages={
+home:()=>`<div class="card"><input id="sq" placeholder="Search seeds, fertilizers, tools…" oninput="list()" size="30"><select id="sc" onchange="list()"><option value="">All categories</option>${CATS.map(c=>`<option>${c}</option>`).join('')}</select><select id="so" onchange="list()"><option value="">Sort</option><option value="a">Price low→high</option><option value="d">Price high→low</option></select></div><div id="gl" class="grid"></div><div id="det"></div>`,
+freg:()=>reg('f'),preg:()=>reg('p'),flogin:()=>lg('Farmer Login','farmerLogin'),plogin:()=>lg('Customer Login','pubLogin'),
+addp:()=>`<div class="card"><h3>Add product</h3><input id="pn" placeholder="Product name"><select id="pc">${CATS.map(c=>`<option>${c}</option>`).join('')}</select><input id="pp" type="number" placeholder="Price ₹"><input id="pk" type="number" placeholder="Stock"><br><textarea id="pd" rows="2" cols="50" placeholder="Description"></textarea><br>Image: <input type="file" id="pi" accept="image/*"><br><button class="p" onclick="addProd()">Add product</button><div id="lm" class="msg"></div></div>`,
+myp:()=>`<div class="card"><h3>My products</h3><table><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th></th></tr>${prods.filter(p=>p.farmer===sess.id).map(p=>`<tr><td style="width:70px">${prodImg(p)}</td><td>${p.name}</td><td>${p.cat}</td><td>₹${p.price}</td><td>${p.stock}</td><td><button class="p" onclick="editProd(${p.id})">Update</button><label class="p" style="padding:7px 12px;border-radius:6px;cursor:pointer;display:inline-block">Image<input type="file" hidden accept="image/*" onchange="setImg(${p.id},this)"></label><button class="p d" onclick="delProd(${p.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan=6>No products</td></tr>'}</table></div>`,
+forders:()=>`<div class="card"><h3>Orders for my products</h3><table><tr><th>Order</th><th>Product</th><th>Qty</th><th>Buyer / Address</th><th>Status</th><th>Update</th></tr>${orders.filter(o=>o.farmer===sess.id).map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.qty}</td><td>${o.buyer}<br><small>${o.addr}</small></td><td><span class="tag">${o.status}</span><br><small>Shipping: ${o.ship}</small></td><td><select onchange="setOrder(${o.id},'status',this.value)">${['Placed','Accepted','Rejected','Completed'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select><select onchange="setOrder(${o.id},'ship',this.value)">${['Not shipped','Packed','Shipped','Out for delivery','Delivered'].map(s=>`<option ${s===o.ship?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')||'<tr><td colspan=6>No orders</td></tr>'}</table></div>`,
+sales:()=>{const my=orders.filter(o=>o.farmer===sess.id&&o.status!=='Rejected');return`<div class="card"><h3>My sales</h3><p>Orders: <b>${my.length}</b> · Revenue: <b>₹${my.reduce((s,o)=>s+o.total,0)}</b></p><table><tr><th>Product</th><th>Units sold</th><th>Revenue</th></tr>${[...new Set(my.map(o=>o.name))].map(n=>`<tr><td>${n}</td><td>${my.filter(o=>o.name===n).reduce((s,o)=>s+o.qty,0)}</td><td>₹${my.filter(o=>o.name===n).reduce((s,o)=>s+o.total,0)}</td></tr>`).join('')}</table></div>`},
+cart:()=>{const tot=cart.reduce((s,c)=>s+c.qty*prods.find(p=>p.id===c.id).price,0),u=me();return`<div class="card"><h3>My cart</h3><table><tr><th>Product</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr>${cart.map(c=>{const p=prods.find(x=>x.id===c.id);return`<tr><td>${p.name}</td><td>₹${p.price}</td><td><input type="number" min="1" max="${p.stock}" value="${c.qty}" style="width:60px" onchange="setQty(${c.id},this.value)"></td><td>₹${c.qty*p.price}</td><td><button class="p d" onclick="cart=cart.filter(x=>x.id!==${c.id});save();render()">Delete</button></td></tr>`}).join('')||'<tr><td colspan=5>Cart empty</td></tr>'}</table><h3>Total ₹${tot} · Wallet ₹${u.wallet}</h3>
+ ${cart.length?`<h4>Shipping address</h4><select id="ad">${u.addr.map((a,i)=>`<option value="${i}">${a}</option>`).join('')}</select> <small>or add new:</small> <input id="na" placeholder="New address" size="30"><button class="p" onclick="addAddr()">Save</button><br><button class="p" onclick="placeOrder()">Order (pay from wallet)</button>`:''}<div id="lm" class="msg"></div></div>`},
+orders:()=>`<div class="card"><h3>My order status</h3><table><tr><th>Order</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Shipping status</th></tr>${orders.filter(o=>o.buyerId===sess.id).map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.qty}</td><td>₹${o.total}</td><td>${o.status}</td><td>${o.ship}</td></tr>`).join('')||'<tr><td colspan=6>No orders</td></tr>'}</table></div>`,
+acct:()=>{const u=me();return`<div class="card"><h3>My account</h3><p>${u.name} · ${u.phone}</p><p>Wallet balance: <b>₹${u.wallet}</b></p><input id="wa" type="number" placeholder="Amount"><button class="p" onclick="topup()">Add to wallet</button><h4>Addresses</h4><ul>${u.addr.map((a,i)=>`<li>${a} <button class="p" onclick="editAddr(${i})">Edit</button></li>`).join('')||'<li>None</li>'}</ul><input id="na" placeholder="New address" size="35"><button class="p" onclick="addAddr()">Add</button></div>`}
+};
+function list(){const q=V('sq').toLowerCase(),c=V('sc'),o=V('so');let r=prods.filter(p=>(p.name+p.desc).toLowerCase().includes(q)&&(!c||p.cat===c));if(o)r.sort((a,b)=>o==='a'?a.price-b.price:b.price-a.price);
+ $('gl').innerHTML=r.map(p=>`<div class="card">${prodImg(p)}<b>${p.name}</b><br><span class="tag">${p.cat}</span><div class="price">₹${p.price}</div><small>${p.stock>0?p.stock+' in stock':'Out of stock'}</small><br><button class="p" onclick="det(${p.id})">Details</button><button class="p" ${p.stock>0?'':'disabled'} onclick="addCart(${p.id})">Add to cart</button></div>`).join('')||'<p>No products found.</p>'}
+function det(id){const p=prods.find(x=>x.id===id);$('det').innerHTML=`<div class="card"><h3>${p.name}</h3><p>${p.desc}</p><p>Seller: ${(farmers.find(f=>f.u===p.farmer)||{}).name} · ₹${p.price}</p></div>`}
+function startReg(role){if(!V('n')||!V('u')||!V('p')||V('ph').length<8){$('lm').textContent='Fill all fields (valid mobile)';return}if((farmers.concat(publics)).find(x=>x.u===V('u'))){$('lm').textContent='Username exists';return}
+ pending={role,n:V('n'),u:V('u'),p:$('p').value,phone:V('ph')};otp=rand();render()}
+function verifyReg(){if(V('ot')!==otp){$('lm').textContent='Wrong OTP';return}const d=pending;(d.role==='f'?farmers:publics).push(d.role==='f'?{u:d.u,p:d.p,name:d.n,phone:d.phone}:{u:d.u,p:d.p,name:d.n,phone:d.phone,wallet:0,addr:[]});pending=null;otp=null;save();alert('Registration complete');go(d.role==='f'?'flogin':'plogin')}
+function farmerLogin(){const u=farmers.find(x=>x.u===V('lu')&&x.p===$('lp').value);if(!u){$('lm').textContent='Invalid credentials';return}sess={role:'farmer',id:u.u,name:u.name};save();go('myp')}
+function pubLogin(){const u=publics.find(x=>x.u===V('lu')&&x.p===$('lp').value);if(!u){$('lm').textContent='Invalid credentials';return}sess={role:'public',id:u.u,name:u.name};save();go('home')}
+function readImg(inp,cb){const f=inp.files[0];if(!f)return cb('');const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(f)}
+function addProd(){if(!V('pn')||!V('pp')){$('lm').textContent='Name and price required';return}readImg($('pi'),img=>{prods.push({id:Date.now(),farmer:sess.id,name:V('pn'),cat:V('pc'),price:+V('pp'),stock:+V('pk')||0,desc:V('pd'),img});try{save()}catch(e){alert('Image too large to store');}go('myp')})}
+function editProd(id){const p=prods.find(x=>x.id===id),pr=prompt('Price',p.price);if(pr===null)return;const s=prompt('Stock',p.stock);if(+pr>0)p.price=+pr;if(s!==null&&+s>=0)p.stock=+s;save();render()}
+function setImg(id,inp){readImg(inp,img=>{prods.find(x=>x.id===id).img=img;try{save()}catch(e){alert('Image too large')}render()})}
+function delProd(id){if(confirm('Delete product?')){prods=prods.filter(p=>p.id!==id);cart=cart.filter(c=>c.id!==id);save();render()}}
+function addCart(id){if(!sess||sess.role!=='public'){alert('Please login as a customer to shop.');return go('plogin')}const c=cart.find(x=>x.id===id);if(c)c.qty++;else cart.push({id,qty:1});save();render()}
+function setQty(id,q){const p=prods.find(x=>x.id===id);cart.find(c=>c.id===id).qty=Math.max(1,Math.min(+q||1,p.stock));save();render()}
+function addAddr(){const a=V('na');if(!a)return;me().addr.push(a);save();render()}
+function editAddr(i){const a=prompt('Edit address',me().addr[i]);if(a){me().addr[i]=a;save();render()}}
+function topup(){const a=+V('wa');if(a>0){me().wallet+=a;save();render()}}
+function placeOrder(){const u=me(),tot=cart.reduce((s,c)=>s+c.qty*prods.find(p=>p.id===c.id).price,0);const addr=u.addr[+($('ad')||{}).value];
+ if(!addr){$('lm').textContent='Add/select a shipping address';return}if(u.wallet<tot){$('lm').textContent='Insufficient wallet balance — add money in My Account';return}
+ u.wallet-=tot;cart.forEach(c=>{const p=prods.find(x=>x.id===c.id);p.stock-=c.qty;orders.push({id:1000+orders.length+1,farmer:p.farmer,buyerId:u.u,buyer:u.name,addr,name:p.name,qty:c.qty,total:c.qty*p.price,status:'Placed',ship:'Not shipped'})});cart=[];save();alert('Order placed!');go('orders')}
+function setOrder(id,k,v){orders.find(o=>o.id===id)[k]=v;save();render()}
+render();
+</script></body></html>

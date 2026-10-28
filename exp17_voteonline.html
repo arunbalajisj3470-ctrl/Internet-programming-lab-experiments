@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp 17 - VoteOnline</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eff6ff;color:#222}
+header{background:#1e40af;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav button{background:#fff;color:#1e40af;border:0;padding:7px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1050px;margin:16px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:10px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea{padding:8px;margin:4px 4px 4px 0;border:1px solid #ccc;border-radius:6px}
+button.p{background:#1e40af;color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin:2px}button.d{background:#dc2626}
+table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:14px}
+.msg{color:#b91c1c}.ok{color:#15803d}.otp{background:#fef9c3;padding:8px;border-radius:6px;display:inline-block;margin:6px 0}
+.cand{display:block;padding:12px;border:2px solid #cbd5e1;border-radius:8px;margin:6px 0;cursor:pointer}.cand:has(input:checked){border-color:#1e40af;background:#dbeafe}
+.bar{background:#1e40af;color:#fff;padding:4px 8px;border-radius:4px;white-space:nowrap}
+</style></head><body>
+<header><h2>🗳 VoteOnline</h2><nav id="nav"></nav></header>
+<main id="app"></main>
+<script>
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},S=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),$=id=>document.getElementById(id),V=id=>$(id).value.trim();
+let elec=L('vo_el',{name:'City Council Election 2026',date:'2026-11-15',open:true});
+let wards=L('vo_wards',['Ward 1','Ward 2']);
+let cands=L('vo_c',[{id:1,name:'A. Kumar',party:'Progress Party',ward:'Ward 1',votes:0},{id:2,name:'S. Fathima',party:'Unity Front',ward:'Ward 1',votes:0},{id:3,name:'R. Joseph',party:'Independent',ward:'Ward 2',votes:0},{id:4,name:'M. Devi',party:'Civic Alliance',ward:'Ward 2',votes:0}]);
+let voters=L('vo_v',[{vid:'VOT1001',name:'Priya',phone:'9000000001',ward:'Ward 1',voted:false},{vid:'VOT1002',name:'Karthik',phone:'9000000002',ward:'Ward 2',voted:false}]);
+let sess=L('vo_sess',null),page='home',otp=null,otpFor=null,voteOtp=null,voteOtpOk=false;
+const save=()=>{S('vo_el',elec);S('vo_wards',wards);S('vo_c',cands);S('vo_v',voters);S('vo_sess',sess)};
+function go(p){page=p;render()}
+function render(){
+ let n='<button onclick="go(\'home\')">Home</button>';
+ if(!sess)n+='<button onclick="go(\'ulogin\')">Voter Login</button><button onclick="go(\'alogin\')">Admin Login</button>';
+ else if(sess.role==='admin')n+='<button onclick="go(\'ael\')">Election & Candidates</button><button onclick="go(\'aw\')">Wards</button><button onclick="go(\'av\')">Voter List</button><button onclick="go(\'ares\')">Results</button>';
+ else n+='<button onclick="go(\'vote\')">Cast Vote</button>';
+ if(sess)n+=`<button onclick="sess=null;otp=null;voteOtpOk=false;save();go('home')">Logout (${sess.name})</button>`;
+ $('nav').innerHTML=n;$('app').innerHTML=pages[page]();
+}
+const pages={
+home:()=>`<div class="card"><h2>${elec.name}</h2><p>Voting date: <b>${elec.date}</b> — status: <b>${elec.open?'Open':'Closed'}</b></p><p>Voters log in with Voter ID, verify an OTP, then request a voting OTP to cast one secure vote.</p><p><small>Demo: voter ID VOT1001 · admin/admin123</small></p></div>`,
+alogin:()=>`<div class="card"><h3>Admin Login</h3><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="p" onclick="adminLogin()">Login</button><div id="lm" class="msg"></div></div>`,
+ulogin:()=>`<div class="card"><h3>Voter Login</h3><input id="vid" placeholder="Voter ID" value="${otpFor||''}"><button class="p" onclick="sendLoginOtp()">Send OTP</button>${otp?`<br><div class="otp">📱 SMS to registered mobile: your login OTP is <b>${otp}</b></div><br><input id="ot" placeholder="Enter OTP"><button class="p" onclick="verifyLogin()">Verify & login</button>`:''}<div id="lm" class="msg"></div></div>`,
+ael:()=>`<div class="card"><h3>Election details</h3><input id="en" value="${elec.name}" size="30"><input id="ed" type="date" value="${elec.date}"><select id="eo"><option value="1" ${elec.open?'selected':''}>Open</option><option value="0" ${elec.open?'':'selected'}>Closed</option></select><button class="p" onclick="saveEl()">Save</button></div>
+ <div class="card"><h3>Create election candidate & allocate to ward</h3><input id="cn" placeholder="Candidate name"><input id="cp" placeholder="Party"><select id="cw">${wards.map(w=>`<option>${w}</option>`).join('')}</select><button class="p" onclick="addCand()">Add candidate</button><div id="lm" class="msg"></div>
+ <table><tr><th>Candidate</th><th>Party</th><th>Ward</th><th></th></tr>${cands.map(c=>`<tr><td>${c.name}</td><td>${c.party}</td><td>${c.ward}</td><td><button class="p d" onclick="cands=cands.filter(x=>x.id!==${c.id});save();render()">Remove</button></td></tr>`).join('')}</table></div>`,
+aw:()=>`<div class="card"><h3>Election wards</h3><input id="nw" placeholder="Ward name"><button class="p" onclick="addWard()">Add ward</button><ul>${wards.map(w=>`<li>${w} — ${voters.filter(v=>v.ward===w).length} voters, ${cands.filter(c=>c.ward===w).length} candidates</li>`).join('')}</ul></div>
+ <div class="card"><h3>Allocate user to election ward</h3><select id="uv">${voters.map(v=>`<option value="${v.vid}">${v.vid} - ${v.name}</option>`).join('')}</select><select id="uw">${wards.map(w=>`<option>${w}</option>`).join('')}</select><button class="p" onclick="allocate()">Allocate</button></div>`,
+av:()=>`<div class="card"><h3>Create voter</h3><input id="vn" placeholder="Name"><input id="vp" placeholder="Mobile"><select id="vw">${wards.map(w=>`<option>${w}</option>`).join('')}</select><button class="p" onclick="addVoter()">Add voter</button></div>
+ <div class="card"><h3>Import voter list (CSV: name,mobile,ward — one per line)</h3><textarea id="csv" rows="4" cols="50" placeholder="Ravi,9876543210,Ward 1"></textarea><br><input type="file" accept=".csv,.txt" onchange="loadCsv(this)"><button class="p" onclick="importCsv()">Import</button></div>
+ <div class="card"><h3>View & update voter list (${voters.length})</h3><table><tr><th>Voter ID</th><th>Name</th><th>Mobile</th><th>Ward</th><th>Voted</th><th></th></tr>${voters.map((v,i)=>`<tr><td>${v.vid}</td><td>${v.name}</td><td>${v.phone}</td><td>${v.ward}</td><td>${v.voted?'Yes':'No'}</td><td><button class="p" onclick="editVoter(${i})">Update</button><button class="p d" onclick="voters.splice(${i},1);save();render()">Delete</button></td></tr>`).join('')}</table></div>`,
+ares:()=>{const tot=cands.reduce((s,c)=>s+c.votes,0);return`<div class="card"><h3>Election results</h3><p>Votes cast: ${tot} / ${voters.length} voters (${voters.length?Math.round(tot/voters.length*100):0}% turnout)</p>${wards.map(w=>{const cs=cands.filter(c=>c.ward===w).sort((a,b)=>b.votes-a.votes);const top=cs[0];return`<h4>${w}${top&&top.votes?` — Leading: <span class="ok">${top.name}</span>`:''}</h4>${cs.map(c=>`<div style="margin:4px 0">${c.name} (${c.party}) <span class="bar" style="display:inline-block;width:${Math.max(30,c.votes*40)}px">${c.votes}</span></div>`).join('')}`}).join('')}</div>`},
+vote:()=>{const v=voters.find(x=>x.vid===sess.id);if(v.voted)return`<div class="card"><h3 class="ok">✔ You have already voted</h3><p>Receipt: ${v.receipt}</p></div>`;if(!elec.open)return'<div class="card"><h3>Voting is closed</h3></div>';
+ return`<div class="card"><h3>${elec.name} — ${v.ward}</h3><p>Step 1: get your voting OTP.</p><button class="p" onclick="getVoteOtp()">Get OTP for voting</button>${voteOtp?`<div class="otp">📱 Voting OTP: <b>${voteOtp}</b></div><br><input id="vo" placeholder="Enter voting OTP"><button class="p" onclick="checkVoteOtp()">Confirm OTP</button>`:''}
+ ${voteOtpOk?`<h4>Step 2: Select candidate</h4>${cands.filter(c=>c.ward===v.ward).map(c=>`<label class="cand"><input type="radio" name="cd" value="${c.id}"> <b>${c.name}</b> — ${c.party}</label>`).join('')}<button class="p" onclick="submitVote()">Submit vote</button>`:''}<div id="lm" class="msg"></div></div>`}
+};
+const rand=()=>String(Math.floor(100000+Math.random()*900000));
+function adminLogin(){if(V('lu')==='admin'&&$('lp').value==='admin123'){sess={role:'admin',id:'admin',name:'Admin'};save();go('ael')}else $('lm').textContent='Invalid credentials'}
+function sendLoginOtp(){const v=voters.find(x=>x.vid.toLowerCase()===V('vid').toLowerCase());if(!v){$('lm').textContent='Voter ID not found in voter list';return}otp=rand();otpFor=v.vid;render()}
+function verifyLogin(){if(V('ot')!==otp){$('lm').textContent='Incorrect OTP';return}const v=voters.find(x=>x.vid===otpFor);sess={role:'voter',id:v.vid,name:v.name};otp=null;otpFor=null;save();go('vote')}
+function saveEl(){elec={name:V('en'),date:V('ed'),open:V('eo')==='1'};save();alert('Saved')}
+function addCand(){if(!V('cn')){$('lm').textContent='Candidate name required';return}cands.push({id:Date.now(),name:V('cn'),party:V('cp')||'Independent',ward:V('cw'),votes:0});save();render()}
+function addWard(){const w=V('nw');if(w&&!wards.includes(w)){wards.push(w);save();render()}}
+function allocate(){voters.find(v=>v.vid===V('uv')).ward=V('uw');save();alert('Voter allocated');render()}
+function nextVid(){return'VOT'+(1001+voters.length+Math.floor(Math.random()*50))}
+function addVoter(){if(!V('vn'))return;voters.push({vid:nextVid(),name:V('vn'),phone:V('vp'),ward:V('vw'),voted:false});save();render()}
+function loadCsv(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>$('csv').value=r.result;r.readAsText(f)}
+function importCsv(){let n=0;V('csv').split('\n').forEach(l=>{const p=l.split(',').map(s=>s.trim());if(p[0]){const w=p[2]||wards[0];if(!wards.includes(w))wards.push(w);voters.push({vid:nextVid(),name:p[0],phone:p[1]||'',ward:w,voted:false});n++}});save();alert(n+' voters imported');render()}
+function editVoter(i){const n=prompt('Name',voters[i].name);if(n===null)return;const p=prompt('Mobile',voters[i].phone);voters[i].name=n||voters[i].name;voters[i].phone=p??voters[i].phone;save();render()}
+function getVoteOtp(){voteOtp=rand();voteOtpOk=false;render()}
+function checkVoteOtp(){if(V('vo')===voteOtp){voteOtpOk=true;render()}else $('lm').textContent='Incorrect OTP'}
+function submitVote(){const r=document.querySelector('input[name=cd]:checked');if(!r){$('lm').textContent='Select a candidate first';return}
+ const v=voters.find(x=>x.vid===sess.id);if(v.voted)return;if(!confirm('Submit your vote? This cannot be changed.'))return;
+ cands.find(c=>c.id==r.value).votes++;v.voted=true;v.receipt='RCPT-'+rand()+' @ '+new Date().toLocaleString();voteOtp=null;voteOtpOk=false;save();alert('Vote submitted successfully!');render()}
+render();
+</script></body></html>
